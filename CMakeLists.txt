@@ -25,7 +25,7 @@ set(CMAKE_CXX_STANDARD 23)
 pico_sdk_init()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/libs)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libs)
 
 add_executable(main_full_smp
         src/bluetooth.cpp
@@ -35,6 +35,11 @@ add_executable(main_full_smp
         )
 
 target_link_libraries(main_full_smp 
+        ADXL375
+        BMP390
+        ISM330DHCX
+        LSM6DSO32
+        UBLOX
         pico_stdlib 
         pico_cyw43_arch_none
         hardware_clocks
@@ -51,8 +56,8 @@ target_link_libraries(main_full_smp
 
 pico_add_extra_outputs(main_full_smp)
 
-target_compile_options(main_full_smp PRIVATE
-        -fmodules-ts
+target_compile_features(main_full_smp PRIVATE
+        cxx_std_23
 )
 
 target_include_directories(main_full_smp PRIVATE

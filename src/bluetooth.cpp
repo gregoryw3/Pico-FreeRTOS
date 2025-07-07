@@ -17,7 +17,8 @@
 
 #include "btstack.h"
 
-import ADXL375;
+#include "ADXL375/ADXL375.h"
+#include "UBLOX/UBLOX.h"
 
 // Constants
 #define PICO_DEFAULT_LED_PIN 25
@@ -38,6 +39,11 @@ static bool setup_hardware(void);
 
 // Task function prototypes
 void simple_task(void *pvParameters);
+void gps_task(void *pvParameters);
+
+// Global GPS objects
+UBLOX::Pico_I2C* gps_i2c = nullptr;
+UBLOX::UBLOX* gps_module = nullptr;
 
 // void vApplicationMallocFailedHook(TaskHandle_t xTask, signed portCHAR* pcTaskName);
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
@@ -66,10 +72,32 @@ int main(void) {
     if (!setup_hardware()) {
         return -1;
     }
+
+    ADXL375::ADXL375 sensor;
+    sensor.hello();  // Call the ADXL375 module's hello function
+    
+    // Initialize GPS module with FreeRTOS abstractions
+    gps_i2c = new UBLOX::Pico_I2C(i2c0, 4, 5);  // SDA=4, SCL=5
+    gps_module = new UBLOX::UBLOX(gps_i2c);
+    
+    UBLOX::Configuration gps_config;
+    gps_config.output_ubx = true;
+    gps_config.output_nmea = false;
+    gps_config.task_priority = 3;
+    gps_config.stack_size = 2048;
+    gps_config.measurement_rate_ms = 1000;  // 1Hz
+    
+    if (gps_module->initialize(gps_config)) {
+        printf("GPS: Module initialized successfully\n");
+    } else {
+        printf("GPS: Failed to initialize module\n");
+    }
     
     printf("FreeRTOS SMP starting on Raspberry Pi Pico\n");
+    
     // Create tasks for sensors
     xTaskCreate(simple_task, "SimpleTask", configMINIMAL_STACK_SIZE * 3, NULL, 2, NULL);
+    xTaskCreate(gps_task, "GPSTask", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
     
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
@@ -90,6 +118,56 @@ void simple_task(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(250));    // Delay for 500 ms
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
         vTaskDelay(pdMS_TO_TICKS(250));    // Delay for 500 ms
+    }
+}
+
+void gps_task(void *pvParameters) {
+    printf("GPS Task: Started\n");
+    
+    // Wait for GPS module to be ready
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    
+    if (!gps_module) {
+        printf("GPS Task: Module not initialized\n");
+        vTaskDelete(NULL);
+        return;
+    }
+    
+    UBLOX::GPSData gps_data;
+    uint32_t message_count = 0;
+    
+    while (true) {
+        // Try to get GPS data (non-blocking with 100ms timeout)
+        if (gps_module->get_data(gps_data, 100)) {
+            message_count++;
+            
+            printf("GPS [%lu]: Received %zu bytes at tick %lu\n", 
+                   message_count, gps_data.length, gps_data.timestamp);
+            
+            // Print first few bytes for debugging (UBX messages start with 0xB5 0x62)
+            if (gps_data.length >= 6) {
+                printf("GPS Data: %02X %02X %02X %02X %02X %02X...\n",
+                       gps_data.data[0], gps_data.data[1], gps_data.data[2],
+                       gps_data.data[3], gps_data.data[4], gps_data.data[5]);
+            }
+            
+            // Print GPS module status every 10 messages
+            if (message_count % 10 == 0) {
+                gps_module->print_status();
+                
+                // Print task statistics
+                TaskStatus_t task_status;
+                gps_module->get_task_stats(task_status);
+                printf("GPS Task Stats: State=%d, Stack HWM=%lu\n",
+                       task_status.eCurrentState, task_status.usStackHighWaterMark);
+            }
+        } else {
+            // No data available, just continue
+            printf("GPS: No data available\n");
+        }
+        
+        // Task runs every 500ms
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 

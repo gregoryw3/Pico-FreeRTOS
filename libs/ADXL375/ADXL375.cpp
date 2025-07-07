@@ -1,5 +1,15 @@
-export module ADXL375;
+#include "ADXL375.h"
 
-export const char* get_phrase() {
-    return "Hello, world!";
+namespace ADXL375 {
+
+ADXL375::ADXL375() = default;
+
+/**
+ * @brief Prints a hello message.
+ * 
+ */
+void ADXL375::hello() {
+    printf("Why hello!\n");
 }
+
+} // namespace ADXL375
