@@ -1,0 +1,70 @@
+{
+    "name": "Pico FreeRTOS Development Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "mcu-debug.debug-tracker-vscode",
+                "ms-vscode.cmake-tools",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.hexeditor",
+                "ms-vscode.vscode-serial-monitor",
+                "twxs.cmake",
+                "ms-python.python",
+                "ms-vscode.vscode-json",
+                "redhat.vscode-yaml",
+                "tamasfe.even-better-toml",
+                "marus25.cortex-debug",
+                "raspberry-pi.raspberry-pi-pico",
+                "alexnesnes.teleplot",
+                "christian-kohler.path-intellisense",
+                "AdamWulkiewicz.graphicaldebugging-vscode",
+                "github.vscode-github-actions",
+                "ms-azuretools.vscode-docker"
+            ],
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/zsh",
+                "terminal.integrated.profiles.linux": {
+                    "zsh": {
+                        "path": "/bin/zsh",
+                        "args": [
+                            "-l"
+                        ]
+                    }
+                },
+                "terminal.integrated.fontFamily": "FiraCode Nerd Font Mono",
+                "terminal.integrated.fontLigatures": true,
+                "editor.fontFamily": "FiraCode Nerd Font Mono, Consolas, 'Courier New', monospace",
+                "editor.fontLigatures": true,
+                "git.enableSmartCommit": true,
+                "git.autofetch": true,
+                "files.autoSave": "afterDelay",
+                "editor.formatOnSave": false,
+                "cmake.configureOnOpen": false,
+                "cmake.configureOnEdit": false,
+                "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+                "explorer.confirmDelete": false,
+                "terminal.integrated.enableMultiLinePasteWarning": "never",
+                "C_Cpp.default.compilerPath": "/usr/local/arm-none-eabi/bin/arm-none-eabi-gcc",
+                "C_Cpp.default.cppStandard": "c++23",
+                "C_Cpp.default.cStandard": "c23",
+                "C_Cpp.default.intelliSenseMode": "gcc-arm",
+                "C_Cpp.default.includePath": [
+                    "/usr/local/arm-none-eabi/arm-none-eabi/include",
+                    "/usr/local/arm-none-eabi/lib/gcc/arm-none-eabi/*/include",
+                    "/workspaces/pico-freertos/**",
+                    "/workspaces/pico-freertos/include/pico-sdk/**",
+                    "/workspaces/pico-freertos/include/FreeRTOS-Kernel/**"
+                ]
+            }
+        }
+    },
+    "remoteUser": "vscode",
+    "forwardPorts": [
+        3000
+    ]
+}

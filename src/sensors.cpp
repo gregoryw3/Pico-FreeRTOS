@@ -1,7 +1,4 @@
-#define BTSTACK_FILE__ "bluetooth.cpp"
-
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
@@ -11,11 +8,11 @@
 #include "hardware/gpio.h"
 
 #include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "semphr.h"
+#include "FreeRTOS-Kernel/include/task.h"
+#include "FreeRTOS-Kernel/include/queue.h"
+#include "FreeRTOS-Kernel/include/semphr.h"
 
-#include "btstack.h"
+#include "ADXL375.h"
 
 // Constants
 #define PICO_DEFAULT_LED_PIN 25
@@ -56,6 +53,32 @@ static bool setup_hardware(void) {
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
 
+    // Initialize I2C0
+    i2c_init(i2c0, I2C_FREQUENCY);
+    gpio_set_function(I2C0_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(I2C0_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C0_SDA_PIN);
+    gpio_pull_up(I2C0_SCL_PIN);
+    printf("I2C0 initialized on pins %d (SDA) and %d (SCL)\n", I2C0_SDA_PIN, I2C0_SCL_PIN);
+
+    // Initialize I2C1
+    i2c_init(i2c1, I2C_FREQUENCY);
+    gpio_set_function(I2C1_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(I2C1_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C1_SDA_PIN);
+    gpio_pull_up(I2C1_SCL_PIN);
+    printf("I2C1 initialized on pins %d (SDA) and %d (SCL)\n", I2C1_SDA_PIN, I2C1_SCL_PIN);
+
+    return true;
+}
+
+static bool setup_sensors(void) {
+    // Initialize the ADXL375 sensor
+    ADXL375::ADXL375<I2C> adxl375_sensor(i2c0, 0x53); // Example I2C address
+    adxl375_sensor.hello();
+
+    // Additional sensors can be initialized here
+
     return true;
 }
 
@@ -64,11 +87,15 @@ int main(void) {
     if (!setup_hardware()) {
         return -1;
     }
+
+    if (!setup_sensors()) {
+        printf("Failed to setup sensors\n");
+        return -1;
+    }
     
     printf("FreeRTOS SMP starting on Raspberry Pi Pico\n");
-
+    // Create tasks for sensors
     xTaskCreate(simple_task, "SimpleTask", configMINIMAL_STACK_SIZE * 3, NULL, 2, NULL);
-
     
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
@@ -91,6 +118,7 @@ void simple_task(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(250));    // Delay for 500 ms
     }
 }
+
 
 // Standard FreeRTOS hook functions already implemented in the existing main.c
 /*-----------------------------------------------------------*/
