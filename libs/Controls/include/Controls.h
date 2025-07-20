@@ -2,6 +2,11 @@
 #include <cstdint>
 #include <type_traits>
 
+extern "C" {
+    #include <fix16.h>
+    #include <fixmatrix.h>
+}
+
 namespace Controls {
     /**
      * @brief PID Controller with Generic Type Support
@@ -11,8 +16,18 @@ namespace Controls {
         template<typename T>
         class Controller {
         public:
+            enum class Mode {
+                // MANUAL mode allows direct output setting
+                MANUAL,
+                // AUTOMATIC mode uses PID calculations
+                AUTOMATIC
+            };
+            enum class Type {
+                FORWARD_EULER,
+                TRAPEZOIDAL
+            };
             Controller(T kp, T ki, T kd, T scale = 1, T sample_time = 1, T gamma = 1, bool enable_back_calculation = true)
-                : kp_(kp), ki_(ki), kd_(kd), scale_(scale), prev_error_(0), integral_(0), sample_time_(sample_time_),
+                : kp_(kp), ki_(ki), kd_(kd), scale_(scale), prev_error_(0), integral_(0), sample_time_(sample_time),
                     gamma_(gamma), enable_back_calculation_(enable_back_calculation) {
                     if constexpr (std::is_integral<T>::value) {
                         // Ensure scale is non-zero for integer types
@@ -79,8 +94,11 @@ namespace Controls {
 
                 // Clamp output to limits
                 T output = unclamped_output;
-                if (output < output_min_) output = output_min_;
-                if (output > output_max_) output = output_max_;
+                // Check if output limits are set
+                if (output_min_ != std::numeric_limits<T>::lowest() && output_max_ != std::numeric_limits<T>::max()) {
+                    if (output < output_min_) output = output_min_;
+                    if (output > output_max_) output = output_max_;
+                }
 
                 if (enable_back_calculation_ && output != unclamped_output) {
                     // Back-calculation for integral windup prevention
@@ -108,9 +126,12 @@ namespace Controls {
             void setKp(T kp) { kp_ = std::is_integral<T>::value ? kp * scale_ : kp; }
             void setKi(T ki) { ki_ = std::is_integral<T>::value ? ki * scale_ : ki; }
             void setKd(T kd) { kd_ = std::is_integral<T>::value ? kd * scale_ : kd; }
+            void setGamma(T gamma) { gamma_ = std::is_integral<T>::value ? gamma * scale_ : gamma; }
+
             T getKp() const { return kp_; }
             T getKi() const { return ki_; }
             T getKd() const { return kd_; }
+            T getGamma() const { return gamma_; }
 
             void setOutputLimits(T min, T max) {
                 output_min_ = min;
@@ -121,7 +142,7 @@ namespace Controls {
             }
             T getSampleTime() const { return sample_time_; }
 
-            void setMode(enum class Mode mode) { mode_ = mode; }
+            void setMode(Mode mode) { mode_ = mode; }
             Mode getMode() const { return mode_ == Mode::AUTOMATIC; }
 
             void setManualOutput(T output) {
@@ -130,7 +151,10 @@ namespace Controls {
                 last_output_ = output;
             }
 
-            void setType(enum class Type type) { type_ = type; }
+            void enableBackCalculation() { enable_back_calculation_ = true; }
+            void disableBackCalculation() { enable_back_calculation_ = false; }
+
+            void setType(Type type) { type_ = type; }
             Type getType() const { return type_; }
 
             void reset() {
@@ -139,16 +163,7 @@ namespace Controls {
                 last_output_ = 0;
             }
 
-            enum class Mode {
-                // MANUAL mode allows direct output setting
-                MANUAL,
-                // AUTOMATIC mode uses PID calculations
-                AUTOMATIC
-            };
-            enum class Type {
-                FORWARD_EULER,
-                TRAPEZOIDAL
-            };
+            
         private:
             T kp_, ki_, kd_;
             T prev_error_, integral_;

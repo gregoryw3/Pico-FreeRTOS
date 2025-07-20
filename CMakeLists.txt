@@ -29,6 +29,33 @@ set(BTSTACK_EXAMPLE_PATH ${BTSTACK_ROOT}/example)
 set(BTSTACK_3RD_PARTY_PATH ${BTSTACK_ROOT}/3rd-party)
 set(BT_EXAMPLE_COMMON_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
+add_library(libfixmath INTERFACE)
+file(GLOB libfixmath-srcs ${CMAKE_CURRENT_LIST_DIR}/include/libfixmath/libfixmath/*.c)
+target_sources(libfixmath INTERFACE ${libfixmath-srcs})
+target_include_directories(libfixmath INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/include/libfixmath/libfixmath
+)
+target_compile_definitions(libfixmath INTERFACE
+        FIXMATH_FAST_SIN
+        # FIXMATH_NO_64BIT
+        # FIXMATH_SIN_LUT
+        # FIXMATH_NO_CACHE
+        # FIXMATH_NO_HARD_DIVISION
+        FIXMATH_NO_OVERFLOW
+        # FIXMATH_NO_ROUNDING
+        # FIXMATH_OPTIMIZE_8BIT
+)
+
+add_library(libfixmatrix INTERFACE)
+file(GLOB libfixmatrix-srcs ${CMAKE_CURRENT_LIST_DIR}/include/libfixmatrix/*.c)
+list(FILTER libfixmatrix-srcs EXCLUDE REGEX ".*unittests\\.c$")
+target_sources(libfixmatrix INTERFACE ${libfixmatrix-srcs})
+target_include_directories(libfixmatrix INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/include/libfixmatrix
+)
+target_compile_definitions(libfixmatrix INTERFACE FIXMATRIX_MAX_SIZE=3)
+target_link_libraries(libfixmatrix INTERFACE libfixmath)
+
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libs)
 
