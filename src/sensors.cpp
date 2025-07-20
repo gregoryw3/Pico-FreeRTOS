@@ -12,7 +12,7 @@
 #include "FreeRTOS-Kernel/include/queue.h"
 #include "FreeRTOS-Kernel/include/semphr.h"
 
-#include "ADXL375.h"
+#include "ADXL375.hpp"
 
 // Constants
 #define PICO_DEFAULT_LED_PIN 25
@@ -69,15 +69,33 @@ static bool setup_hardware(void) {
     gpio_pull_up(I2C1_SCL_PIN);
     printf("I2C1 initialized on pins %d (SDA) and %d (SCL)\n", I2C1_SDA_PIN, I2C1_SCL_PIN);
 
-    return true;
-}
+    BoardBase board;
+    board.pose = Pose(Eigen::Vector3f(0.0f, 0.0f, 0.0f), Eigen::Quaternionf::Identity());
 
-static bool setup_sensors(void) {
-    // Initialize the ADXL375 sensor
-    ADXL375::ADXL375<I2C> adxl375_sensor(i2c0, 0x53); // Example I2C address
-    adxl375_sensor.hello();
+    ADXL375::ADXL375<I2C> adxl375_sensor(i2c0, ADXL375::Address::ALTERNATE);
+    adxl375_sensor.pose_on_pcb = Pose(Eigen::Vector3f(0.0f, 0.0f, 0.0f), Eigen::Quaternionf::Identity());
+    adxl375_sensor.init(ADXL375::Settings {
+        .bandwidth = ADXL375::BandWidth::HZ_3200,
+        .power_mode = ADXL375::PowerMode::MEASUREMENT,
+        .justification = ADXL375::DataJustification::RIGHT_JUSTIFIED,
+        .int_polarity = ADXL375::InterruptPolarity::ACTIVE_HIGH,
+        .self_test = false,
+        .spi_mode = ADXL375::SPIMode::FOUR_WIRE
+    });
+    AccelData accel_data = adxl375_sensor.read_accel();
+    Eigen::Vector3f accel = Eigen::Vector3f(accel_data.x, accel_data.y, accel_data.z);
 
-    // Additional sensors can be initialized here
+    // Transform to PCB frame using pose orientation
+    Eigen::Vector3f transformed_accel = adxl375_sensor.pose_on_pcb.orientation * accel;
+    accel_data.x = transformed_accel.x();
+    accel_data.y = transformed_accel.y();
+    accel_data.z = transformed_accel.z();
+
+    // Transform to center frame
+    Eigen::Vector3f center_accel = board.pose.orientation * transformed_accel;
+    accel_data.x = center_accel.x();
+    accel_data.y = center_accel.y();
+    accel_data.z = center_accel.z();
 
     return true;
 }
@@ -85,11 +103,6 @@ static bool setup_sensors(void) {
 int main(void) {
     // Initialize the hardware
     if (!setup_hardware()) {
-        return -1;
-    }
-
-    if (!setup_sensors()) {
-        printf("Failed to setup sensors\n");
         return -1;
     }
     
@@ -163,8 +176,10 @@ void vApplicationIdleHook( void )
     RAM. */
     xFreeHeapSpace = xPortGetFreeHeapSize();
 
+    printf("FreeRTOS heap space: %zu bytes\n", xFreeHeapSpace);
+
     /* Remove compiler warning about xFreeHeapSpace being set but never used. */
-    ( void ) xFreeHeapSpace;
+    // ( void ) xFreeHeapSpace;
 }
 /*-----------------------------------------------------------*/
 

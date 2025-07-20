@@ -3,7 +3,7 @@
 
 class Pose {
 public:
-    Eigen::Vector3f position; // Position in 3D space
+    Eigen::Vector3f position; // Position in 3D space in milimeters
     Eigen::Quaternionf orientation; // Orientation as a quaternion
     Pose() : position(Eigen::Vector3f::Zero()), orientation(Eigen::Quaternionf::Identity()) {}
     Pose(const Eigen::Vector3f& pos, const Eigen::Quaternionf& orient)
