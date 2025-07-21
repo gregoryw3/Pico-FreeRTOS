@@ -15,12 +15,11 @@ int main() {
     double process_noise = 0.1;
 
     // PID controller setup
-    Controller<double> pid(
+    FloatController<double> pid(
         2.0, 
         0.5, 
         0.1, 
-        1.0, 
-        dt, 
+        dt,
         1.0,
         true
     );

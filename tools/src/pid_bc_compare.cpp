@@ -12,41 +12,66 @@
 
 int main() {
     using namespace Controls::PID;
-    // Simulation parameters
     const int steps = 100;
-    double setpoint = 10.0;
-    double dt = 0.1;
-    double process_gain = 0.8;
-    double process_noise = 0.1;
+    float setpoint = 10.0;
+    float dt = 0.1;
+    float process_gain = 0.8;
+    float process_noise = 0.1;
 
-    // PID controller setup
-    auto kp = 2.0;
-    auto ki = 0.5;
-    auto kd = 0.1;
-    auto gamma = 1/kp;
-    Controller<double> pid_bc(kp, ki, kd, 1.0, dt, gamma, true);
+    // float PID controllers
+    float kp = 2.0;
+    float ki = 0.5;
+    float kd = 0.1;
+    float gamma = 1.0/kp;
+    FloatController<float> pid_bc(kp, ki, kd, dt, gamma, true);
     pid_bc.setOutputLimits(-5.0, 5.0);
     pid_bc.enableBackCalculation();
 
-    Controller<double> pid_nobc(kp, ki, kd, 1.0, dt, gamma, false);
+    FloatController<float> pid_nobc(kp, ki, kd, dt, gamma, false);
     pid_nobc.setOutputLimits(-5.0, 5.0);
     pid_nobc.disableBackCalculation();
 
-    std::vector<double> time, measured_bc, measured_nobc, output_bc, output_nobc;
-    double process_bc = 0.0, process_nobc = 0.0;
+    // Fixed-point PID controllers (now using float interface)
+    FixedController<float> pid_bc_fx(kp, ki, kd, dt, gamma, true);
+    pid_bc_fx.setOutputLimits(-5.0, 5.0);
+    pid_bc_fx.enableBackCalculation();
+
+    FixedController<float> pid_nobc_fx(kp, ki, kd, dt, gamma, false);
+    pid_nobc_fx.setOutputLimits(-5.0, 5.0);
+    pid_nobc_fx.disableBackCalculation();
+
+    std::vector<float> time;
+    std::vector<float> measured_bc, measured_nobc, output_bc, output_nobc;
+    std::vector<float> measured_bc_fx, measured_nobc_fx, output_bc_fx, output_nobc_fx;
+    float process_bc = 0.0, process_nobc = 0.0;
+    float process_bc_fx = 0.0, process_nobc_fx = 0.0;
 
     for (int i = 0; i < steps; ++i) {
-        double control_bc = pid_bc.update(setpoint, process_bc, dt);
+        // float controllers
+        float control_bc = pid_bc.update(setpoint, process_bc, dt);
         process_bc += control_bc * process_gain * dt;
         process_bc += ((rand() % 100) / 100.0 - 0.5) * process_noise;
         measured_bc.push_back(process_bc);
         output_bc.push_back(control_bc);
 
-        double control_nobc = pid_nobc.update(setpoint, process_nobc, dt);
+        float control_nobc = pid_nobc.update(setpoint, process_nobc, dt);
         process_nobc += control_nobc * process_gain * dt;
         process_nobc += ((rand() % 100) / 100.0 - 0.5) * process_noise;
         measured_nobc.push_back(process_nobc);
         output_nobc.push_back(control_nobc);
+
+        // Fixed-point controllers (using float interface)
+        float control_bc_fx = pid_bc_fx.update(setpoint, process_bc_fx, dt);
+        process_bc_fx += control_bc_fx * process_gain * dt;
+        process_bc_fx += ((rand() % 100) / 100.0 - 0.5) * process_noise;
+        measured_bc_fx.push_back(process_bc_fx);
+        output_bc_fx.push_back(control_bc_fx);
+
+        float control_nobc_fx = pid_nobc_fx.update(setpoint, process_nobc_fx, dt);
+        process_nobc_fx += control_nobc_fx * process_gain * dt;
+        process_nobc_fx += ((rand() % 100) / 100.0 - 0.5) * process_noise;
+        measured_nobc_fx.push_back(process_nobc_fx);
+        output_nobc_fx.push_back(control_nobc_fx);
 
         time.push_back(i * dt);
     }
@@ -74,7 +99,7 @@ int main() {
         ImGui::Begin("PID Back Calculation Comparison");
         char param_label_left[128], param_label_right[128];
         snprintf(param_label_left, sizeof(param_label_left),
-            "Kp: %.2f\nKi: %.2f\nKd: %.2f\nGamma: %.2f\nSetpoint: %.2f",
+            "Kp: %.2f\nKi: %.2f\nKd: %.2f\nGamma (1/Kp): %.2f\nSetpoint: %.2f",
             kp, ki, kd, gamma, setpoint);
         snprintf(param_label_right, sizeof(param_label_right),
             "dt: %.2f\nProcess Gain: %.2f\nProcess Noise: %.2f\nOutput Limits: [%.2f, %.2f]",
@@ -84,25 +109,49 @@ int main() {
         ImGui::NextColumn();
         ImGui::TextUnformatted(param_label_right);
         ImGui::Columns(1);
-        double t_min = time.front();
-        double t_max = time.back();
-        double y_min = std::min(*std::min_element(measured_bc.begin(), measured_bc.end()), *std::min_element(measured_nobc.begin(), measured_nobc.end()));
-        double y_max = std::max(*std::max_element(measured_bc.begin(), measured_bc.end()), *std::max_element(measured_nobc.begin(), measured_nobc.end()));
+        float t_min = time.front();
+        float t_max = time.back();
+        float y_min = std::min({
+            *std::min_element(measured_bc.begin(), measured_bc.end()),
+            *std::min_element(measured_nobc.begin(), measured_nobc.end()),
+            *std::min_element(measured_bc_fx.begin(), measured_bc_fx.end()),
+            *std::min_element(measured_nobc_fx.begin(), measured_nobc_fx.end())
+        });
+        float y_max = std::max({
+            *std::max_element(measured_bc.begin(), measured_bc.end()),
+            *std::max_element(measured_nobc.begin(), measured_nobc.end()),
+            *std::max_element(measured_bc_fx.begin(), measured_bc_fx.end()),
+            *std::max_element(measured_nobc_fx.begin(), measured_nobc_fx.end())
+        });
         y_min = std::min(y_min, setpoint) - 3.0;
         y_max = std::max(y_max, setpoint) + 3.0;
 
         ImPlot::SetNextAxesLimits(t_min, t_max, y_min, y_max, ImGuiCond_Always);
-        if (ImPlot::BeginPlot("Double: With Back Calculation", ImVec2(-1,200))) {
+        if (ImPlot::BeginPlot("Float: With Back Calculation", ImVec2(-1,200))) {
             ImPlot::PlotLine("Response (BC)", time.data(), measured_bc.data(), (int)measured_bc.size());
-            ImPlot::PlotLine("Setpoint", time.data(), std::vector<double>(measured_bc.size(), setpoint).data(), (int)measured_bc.size());
+            ImPlot::PlotLine("Setpoint", time.data(), std::vector<float>(measured_bc.size(), setpoint).data(), (int)measured_bc.size());
             ImPlot::PlotLine("Control (BC)", time.data(), output_bc.data(), (int)output_bc.size());
             ImPlot::EndPlot();
         }
         ImPlot::SetNextAxesLimits(t_min, t_max, y_min, y_max, ImGuiCond_Always);
-        if (ImPlot::BeginPlot("Double: Without Back Calculation", ImVec2(-1,200))) {
+        if (ImPlot::BeginPlot("Float: Without Back Calculation", ImVec2(-1,200))) {
             ImPlot::PlotLine("Response (No BC)", time.data(), measured_nobc.data(), (int)measured_nobc.size());
-            ImPlot::PlotLine("Setpoint", time.data(), std::vector<double>(measured_nobc.size(), setpoint).data(), (int)measured_nobc.size());
+            ImPlot::PlotLine("Setpoint", time.data(), std::vector<float>(measured_nobc.size(), setpoint).data(), (int)measured_nobc.size());
             ImPlot::PlotLine("Control (No BC)", time.data(), output_nobc.data(), (int)output_nobc.size());
+            ImPlot::EndPlot();
+        }
+        ImPlot::SetNextAxesLimits(t_min, t_max, y_min, y_max, ImGuiCond_Always);
+        if (ImPlot::BeginPlot("Fixed: With Back Calculation", ImVec2(-1,200))) {
+            ImPlot::PlotLine("Response (BC, Fixed)", time.data(), measured_bc_fx.data(), (int)measured_bc_fx.size());
+            ImPlot::PlotLine("Setpoint", time.data(), std::vector<float>(measured_bc_fx.size(), setpoint).data(), (int)measured_bc_fx.size());
+            ImPlot::PlotLine("Control (BC, Fixed)", time.data(), output_bc_fx.data(), (int)output_bc_fx.size());
+            ImPlot::EndPlot();
+        }
+        ImPlot::SetNextAxesLimits(t_min, t_max, y_min, y_max, ImGuiCond_Always);
+        if (ImPlot::BeginPlot("Fixed: Without Back Calculation", ImVec2(-1,200))) {
+            ImPlot::PlotLine("Response (No BC, Fixed)", time.data(), measured_nobc_fx.data(), (int)measured_nobc_fx.size());
+            ImPlot::PlotLine("Setpoint", time.data(), std::vector<float>(measured_nobc_fx.size(), setpoint).data(), (int)measured_nobc_fx.size());
+            ImPlot::PlotLine("Control (No BC, Fixed)", time.data(), output_nobc_fx.data(), (int)output_nobc_fx.size());
             ImPlot::EndPlot();
         }
         ImGui::End();

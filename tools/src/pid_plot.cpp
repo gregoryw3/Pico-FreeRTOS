@@ -15,8 +15,8 @@ int main() {
     // Simulation state
     std::vector<float> time, measured, control_output;
     float setpoint = 10.0f, process = 0.0f, dt = 0.1f, process_gain = 0.8f, process_noise = 0.1f;
-    float Kp = 2.0f, Ki = 0.5f, Kd = 0.1f, gamma = 1.0f, lim = 1.0f;
-    Controller<float> pid(Kp, Ki, Kd, gamma, dt, lim, true);
+    float Kp = 2.0f, Ki = 0.5f, Kd = 0.1f, gamma = 1.0f;
+    FloatController<float> pid(Kp, Ki, Kd, dt, gamma, true);
     pid.setOutputLimits(-20.0f, 20.0f);
     int step = 0;
 
@@ -34,8 +34,6 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 410");
 
-    #include <thread>
-    const double target_frame_time = 1.0 / 30.0; // 30 FPS
     while (!glfwWindowShouldClose(window)) {
         double frame_start = glfwGetTime();
         glfwPollEvents();
@@ -73,10 +71,10 @@ int main() {
         if (ImGui::Button(manual_mode ? "Switch to Automatic" : "Switch to Manual")) {
             manual_mode = !manual_mode;
             if (manual_mode) {
-                pid.setMode(Controller<float>::Mode::MANUAL);
+                pid.setMode(Mode::MANUAL);
                 pid.setManualOutput(manual_output);
             } else {
-                pid.setMode(Controller<float>::Mode::AUTOMATIC);
+                pid.setMode(Mode::AUTOMATIC);
             }
             time.clear(); measured.clear(); control_output.clear();
             process = 0.0f; step = 0;
@@ -101,7 +99,7 @@ int main() {
         if (ImGui::Button("Reset")) {
             time.clear(); measured.clear(); control_output.clear();
             process = 0.0f; step = 0;
-            pid = Controller<float>(Kp, Ki, Kd, gamma, dt, lim, back_calc_enabled);
+            pid = FloatController<float>(Kp, Ki, Kd, gamma, dt, back_calc_enabled);
             pid.setOutputLimits(-20.0f, 20.0f);
             if (back_calc_enabled) {
                 pid.enableBackCalculation();
@@ -109,10 +107,10 @@ int main() {
                 pid.disableBackCalculation();
             }
             if (manual_mode) {
-                pid.setMode(Controller<float>::Mode::MANUAL);
+                pid.setMode(Mode::MANUAL);
                 pid.setManualOutput(manual_output);
             } else {
-                pid.setMode(Controller<float>::Mode::AUTOMATIC);
+                pid.setMode(Mode::AUTOMATIC);
             }
         }
         // Auto tune logic
@@ -122,7 +120,7 @@ int main() {
             for (float test_Kp = 0.5f; test_Kp <= 5.0f; test_Kp += 0.5f) {
                 for (float test_Ki = 0.0f; test_Ki <= 2.0f; test_Ki += 0.2f) {
                     for (float test_Kd = 0.0f; test_Kd <= 1.0f; test_Kd += 0.1f) {
-                        Controller<float> test_pid(test_Kp, test_Ki, test_Kd, gamma, dt, lim, back_calc_enabled);
+                        FloatController<float> test_pid(test_Kp, test_Ki, test_Kd, gamma, dt, back_calc_enabled);
                         test_pid.setOutputLimits(-20.0f, 20.0f);
                         if (back_calc_enabled) {
                             test_pid.enableBackCalculation();
@@ -151,7 +149,7 @@ int main() {
             Kd = best_Kd;
             time.clear(); measured.clear(); control_output.clear();
             process = 0.0f; step = 0;
-            pid = Controller<float>(Kp, Ki, Kd, gamma, dt, lim, back_calc_enabled);
+            pid = FloatController<float>(Kp, Ki, Kd, gamma, dt, back_calc_enabled);
             pid.setOutputLimits(-20.0f, 20.0f);
             if (back_calc_enabled) {
                 pid.enableBackCalculation();

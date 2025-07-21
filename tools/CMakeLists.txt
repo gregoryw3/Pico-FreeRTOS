@@ -27,15 +27,18 @@ add_executable(pid_bc_compare src/pid_bc_compare.cpp
     include/imgui/backends/imgui_impl_opengl3.cpp
     include/implot/implot.cpp 
     include/implot/implot_items.cpp
+    ../include/libfixmath/libfixmath/fix16.c
 )
 
 # Include the Controls library headers
 target_include_directories(pid_sim PRIVATE
     ${CMAKE_SOURCE_DIR}/../libs/Controls/include
+    ${CMAKE_SOURCE_DIR}/../include
 )
 
 target_include_directories(pid_plot PRIVATE
     ${CMAKE_SOURCE_DIR}/../libs/Controls/include
+    ${CMAKE_SOURCE_DIR}/../include
     ${CMAKE_SOURCE_DIR}/include/imgui
     ${CMAKE_SOURCE_DIR}/include/imgui/backends
     ${CMAKE_SOURCE_DIR}/include/implot
@@ -44,6 +47,7 @@ target_include_directories(pid_plot PRIVATE
 
 target_include_directories(pid_bc_compare PRIVATE
     ${CMAKE_SOURCE_DIR}/../libs/Controls/include
+    ${CMAKE_SOURCE_DIR}/../include
     ${CMAKE_SOURCE_DIR}/include/imgui
     ${CMAKE_SOURCE_DIR}/include/imgui/backends
     ${CMAKE_SOURCE_DIR}/include/implot
