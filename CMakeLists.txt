@@ -24,6 +24,9 @@ if (PICO_SDK_VERSION_STRING VERSION_LESS "1.3.0")
     message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.3.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
 endif()
 
+set(PICO_LWIP_CONTRIB_PATH ${PICO_SDK_PATH}/lib/lwip/contrib)
+add_subdirectory(${PICO_SDK_PATH}/lib/lwip ${CMAKE_BINARY_DIR}/lwip)
+
 set(BTSTACK_ROOT ${PICO_SDK_PATH}/lib/btstack)
 set(BTSTACK_EXAMPLE_PATH ${BTSTACK_ROOT}/example)
 set(BTSTACK_3RD_PARTY_PATH ${BTSTACK_ROOT}/3rd-party)
@@ -37,7 +40,7 @@ target_include_directories(libfixmath INTERFACE
 )
 target_compile_definitions(libfixmath INTERFACE
         FIXMATH_FAST_SIN
-        # FIXMATH_NO_64BIT
+        FIXMATH_NO_64BIT
         # FIXMATH_SIN_LUT
         # FIXMATH_NO_CACHE
         # FIXMATH_NO_HARD_DIVISION

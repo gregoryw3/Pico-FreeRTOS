@@ -21,7 +21,7 @@ namespace Controls {
 
         template<typename T>
         class FloatController {
-            static_assert(std::is_floating_point<T>::value || std::is_integral<T>::value, "T must be a floating-point or integral type");
+            static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
         public:
             FloatController(T kp, T ki, T kd, T sample_time = 1, T gamma = 1, bool enable_back_calculation = true)
                 : kp_(kp), ki_(ki), kd_(kd), prev_error_(0), integral_(0), sample_time_(sample_time),
