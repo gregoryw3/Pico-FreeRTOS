@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://gregoryw3.github.io/Pico-FreeRTOS',
-  base: '/',
+  base: '/Pico-FreeRTOS',
   integrations: [
       starlight({
           title: 'Pico-FreeRTOS',
