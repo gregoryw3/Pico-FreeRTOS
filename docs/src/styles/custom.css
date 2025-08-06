@@ -1,8 +1,5 @@
-/* Pico-FreeRTOS Aerospace Theme - Futuristic NASA/SpaceX Inspired */
-
-/* Root variables for aerospace theming */
+/* Root variables for theming */
 :root {
-  /* SpaceX-inspired color palette */
   --sl-color-accent: #0ea5e9; /* Mission blue */
   --sl-color-accent-low: rgba(14, 165, 233, 0.1);
   --sl-color-accent-high: #0284c7;
@@ -36,6 +33,21 @@
   --sl-color-gray-5: #334155;
 }
 
+/* Light theme enhancements */
+:root[data-theme='light'] {
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: #f8fafc;
+  --sl-color-bg-sidebar: #f8fafc;
+  --sl-color-gray-1: #0f172a;
+  --sl-color-gray-2: #1e293b;
+  --sl-color-gray-3: #334155;
+  --sl-color-gray-4: #475569;
+  --sl-color-gray-5: #64748b;
+  --sl-color-gray-6: #f8fafc;
+  --sl-color-text: #0f172a;
+  --sl-color-text-accent: #1e40af;
+}
+
 /* Enhanced hero section with aerospace styling */
 .hero {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
@@ -44,6 +56,12 @@
   border-radius: 0.75rem !important;
   margin: 1rem !important;
   padding: 2rem 3rem !important;
+}
+
+/* Light mode hero */
+:root[data-theme='light'] .hero {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 50%, #94a3b8 100%);
+  color: #0f172a;
 }
 
 @media (max-width: 768px) {
@@ -81,6 +99,13 @@
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Light mode cards */
+:root[data-theme='light'] .card {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
+  border: 1px solid rgba(14, 165, 233, 0.4) !important;
+  color: #0f172a !important;
 }
 
 .card:hover {
@@ -179,6 +204,12 @@
   border-right: 1px solid rgba(14, 165, 233, 0.2) !important;
 }
 
+/* Light mode sidebar */
+:root[data-theme='light'] .sidebar {
+  background: linear-gradient(180deg, #f8fafc, #e2e8f0) !important;
+  border-right: 1px solid rgba(14, 165, 233, 0.3) !important;
+}
+
 .sidebar-content {
   background: transparent !important;
 }
@@ -220,10 +251,61 @@
   color: white !important;
 }
 
+/* Light mode active sidebar links */
+:root[data-theme='light'] .sidebar a[aria-current="page"],
+:root[data-theme='light'] .sidebar a[data-current-page="true"] {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-left: 0.25rem solid var(--sl-color-accent) !important;
+  padding-left: 1rem !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme='light'] .sidebar a[aria-current="page"]:hover,
+:root[data-theme='light'] .sidebar a[data-current-page="true"]:hover {
+  background: rgba(14, 165, 233, 0.2) !important;
+  color: #0f172a !important;
+}
+
+/* Table of Contents (On this page) styling */
+.right-sidebar .starlight-toc a {
+  transition: all 0.2s ease !important;
+  border-radius: 0.25rem !important;
+  padding: 0.25rem 0.5rem !important;
+  margin: 0.125rem 0 !important;
+}
+
+.right-sidebar .starlight-toc a:hover {
+  background: rgba(14, 165, 233, 0.1) !important;
+  color: var(--sl-color-accent) !important;
+}
+
+/* Active TOC link styling */
+.right-sidebar .starlight-toc a[aria-current="true"] {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-left: 0.25rem solid var(--sl-color-accent) !important;
+  padding-left: 0.75rem !important;
+  color: var(--sl-color-accent) !important;
+  font-weight: 600 !important;
+}
+
+/* Light mode TOC active links */
+:root[data-theme='light'] .right-sidebar .starlight-toc a[aria-current="true"] {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-left: 0.25rem solid var(--sl-color-accent) !important;
+  padding-left: 0.75rem !important;
+  color: #1e40af !important;
+  font-weight: 600 !important;
+}
+
 /* Main navigation bar */
 .header {
   background: rgba(15, 23, 42, 0.95) !important;
   backdrop-filter: blur(12px) !important;
+}
+
+/* Light mode header */
+:root[data-theme='light'] .header {
+  background: rgba(248, 250, 252, 0.95) !important;
 }
 
 /* Site title enhancement */
@@ -242,6 +324,13 @@
   background: linear-gradient(135deg, #1e293b, #334155) !important;
   position: relative;
   overflow: hidden;
+}
+
+/* Light mode code blocks */
+:root[data-theme='light'] .expressive-code {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
+  border: 1px solid rgba(14, 165, 233, 0.4) !important;
+  color: #0f172a !important;
 }
 
 .expressive-code::before {
@@ -266,6 +355,12 @@ table {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
 }
 
+/* Light mode tables */
+:root[data-theme='light'] table {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
 table th {
   background: linear-gradient(135deg, #0ea5e9, #1e40af) !important;
   color: white !important;
@@ -278,6 +373,11 @@ table th {
 table td, table th {
   padding: 1rem 1.5rem !important;
   border-bottom: 1px solid rgba(14, 165, 233, 0.1) !important;
+}
+
+/* Light mode table cells */
+:root[data-theme='light'] table td {
+  color: #0f172a !important;
 }
 
 table tr:last-child td {
@@ -293,10 +393,58 @@ table tr:hover {
   background: linear-gradient(180deg, #0f172a, #1e293b) !important;
 }
 
+/* Light mode content area */
+:root[data-theme='light'] .main-frame {
+  background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
 /* Footer styling */
 .footer {
   background: linear-gradient(135deg, #0f172a, #1e293b) !important;
   border-top: 1px solid rgba(14, 165, 233, 0.2) !important;
+}
+
+/* Light mode footer */
+:root[data-theme='light'] .footer {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
+  border-top: 1px solid rgba(14, 165, 233, 0.3) !important;
+}
+
+/* Light mode text and content styling */
+:root[data-theme='light'] .content {
+  color: #0f172a !important;
+}
+
+:root[data-theme='light'] .content p {
+  color: #1e293b !important;
+}
+
+:root[data-theme='light'] .content li {
+  color: #1e293b !important;
+}
+
+:root[data-theme='light'] .content h1,
+:root[data-theme='light'] .content h2,
+:root[data-theme='light'] .content h3,
+:root[data-theme='light'] .content h4 {
+  color: #0f172a !important;
+}
+
+/* Light mode card titles and content */
+:root[data-theme='light'] .card h3,
+:root[data-theme='light'] .card h4,
+:root[data-theme='light'] .card p {
+  color: #0f172a !important;
+}
+
+/* Light mode mission profile card content */
+:root[data-theme='light'] .mission-profile-card h3 {
+  color: #0f172a !important;
+}
+
+:root[data-theme='light'] .mission-profile-card li,
+:root[data-theme='light'] .mission-profile-card p {
+  color: #1e293b !important;
 }
 
 /* Better approach - use a custom class for mission profiles */
@@ -319,6 +467,13 @@ table tr:hover {
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+}
+
+/* Light mode mission profile cards */
+:root[data-theme='light'] .mission-profile-card {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  color: #0f172a;
 }
 
 .mission-profile-card:hover {
