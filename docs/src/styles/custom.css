@@ -1,0 +1,407 @@
+/* Pico-FreeRTOS Aerospace Theme - Futuristic NASA/SpaceX Inspired */
+
+/* Root variables for aerospace theming */
+:root {
+  /* SpaceX-inspired color palette */
+  --sl-color-accent: #0ea5e9; /* Mission blue */
+  --sl-color-accent-low: rgba(14, 165, 233, 0.1);
+  --sl-color-accent-high: #0284c7;
+  
+  /* Aerospace theme colors */
+  --aerospace-primary: #1e40af; /* Deep space blue */
+  --aerospace-secondary: #059669; /* Systems green */
+  --aerospace-accent: #7c3aed; /* Communication purple */
+  --aerospace-warning: #f59e0b; /* Alert amber */
+  --aerospace-danger: #dc2626; /* Critical red */
+  --aerospace-success: #10b981; /* Mission success green */
+  
+  /* Override Starlight's gray palette */
+  --sl-color-gray-1: #f8fafc;
+  --sl-color-gray-2: #e2e8f0;
+  --sl-color-gray-3: #cbd5e1;
+  --sl-color-gray-4: #94a3b8;
+  --sl-color-gray-5: #64748b;
+  --sl-color-gray-6: #1e293b;
+  --sl-color-bg: #0f172a;
+  --sl-color-bg-nav: #0f172a;
+  --sl-color-bg-sidebar: #0f172a;
+}
+
+/* Dark theme enhancements */
+:root[data-theme='dark'] {
+  --sl-color-bg: #0f172a;
+  --sl-color-bg-nav: #1e293b;
+  --sl-color-bg-sidebar: #1e293b;
+  --sl-color-gray-6: #1e293b;
+  --sl-color-gray-5: #334155;
+}
+
+/* Enhanced hero section with aerospace styling */
+.hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem !important;
+  margin: 1rem !important;
+  padding: 2rem 3rem !important;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    margin: 0.5rem !important;
+    padding: 1.5rem 2rem !important;
+  }
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(14, 165, 233, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(5, 150, 105, 0.05) 0%, transparent 70%);
+  animation: pulseGlow 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* Starlight card styling */
+.card {
+  background: linear-gradient(135deg, #1e293b, #334155) !important;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
+  border-radius: 0.75rem !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.card:hover {
+  border-color: #0ea5e9 !important;
+  box-shadow: 
+    0 10px 25px rgba(14, 165, 233, 0.2),
+    0 0 20px rgba(14, 165, 233, 0.1) !important;
+  transform: translateY(-0.25rem) !important;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 0.125rem;
+  background: linear-gradient(90deg, #0ea5e9, #1e40af);
+  transition: left 0.5s ease;
+  z-index: 10;
+}
+
+.card:hover::before {
+  left: 0;
+}
+
+/* Target Starlight's actual card grid */
+.card-grid {
+  gap: 1.5rem !important;
+}
+
+/* Enhanced section headers */
+.content h2 {
+  background: linear-gradient(135deg, #0ea5e9, #1e40af);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700 !important;
+  font-size: 2.25rem !important;
+  text-align: center;
+  margin: 3rem 0 2rem !important;
+  position: relative;
+}
+
+.content h2::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6.25rem;
+  height: 0.125rem;
+  background: linear-gradient(90deg, #0ea5e9, #1e40af);
+  border-radius: 0.125rem;
+}
+
+/* Enhanced section headers for h3 */
+.content h3 {
+  color: var(--sl-color-accent) !important;
+  font-weight: 600 !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+  position: relative;
+}
+
+.content h3::before {
+  content: '▶';
+  margin-right: 0.5rem;
+  color: var(--aerospace-secondary);
+}
+
+/* Enhanced lists styling */
+.content ul {
+  margin: 1rem 0;
+}
+
+.content li {
+  position: relative;
+  padding-left: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.content li::marker {
+  color: var(--sl-color-accent);
+}
+
+/* Make strong text stand out with aerospace theme */
+.content strong {
+  color: var(--sl-color-accent) !important;
+  font-weight: 700 !important;
+}
+
+/* Navigation sidebar enhancements */
+.sidebar {
+  background: linear-gradient(180deg, #0f172a, #1e293b) !important;
+  border-right: 1px solid rgba(14, 165, 233, 0.2) !important;
+}
+
+.sidebar-content {
+  background: transparent !important;
+}
+
+/* Sidebar group labels */
+.sidebar details summary {
+  color: var(--sl-color-accent) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+  font-size: 0.875rem !important;
+}
+
+/* Sidebar links */
+.sidebar a {
+  transition: all 0.2s ease !important;
+  border-radius: 0.375rem !important;
+  margin: 0.125rem 0 !important;
+}
+
+.sidebar a:hover {
+  background: rgba(14, 165, 233, 0.1) !important;
+  border-left: 0.25rem solid var(--sl-color-accent) !important;
+  padding-left: 1rem !important;
+}
+
+/* Fix active/selected sidebar link styling */
+.sidebar a[aria-current="page"],
+.sidebar a[data-current-page="true"] {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-left: 0.25rem solid var(--sl-color-accent) !important;
+  padding-left: 1rem !important;
+  color: white !important;
+}
+
+.sidebar a[aria-current="page"]:hover,
+.sidebar a[data-current-page="true"]:hover {
+  background: rgba(14, 165, 233, 0.2) !important;
+  color: white !important;
+}
+
+/* Main navigation bar */
+.header {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Site title enhancement */
+.site-title {
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, #0ea5e9, #1e40af);
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Code blocks with futuristic styling */
+.expressive-code {
+  border-radius: 0.75rem !important;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
+  background: linear-gradient(135deg, #1e293b, #334155) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.expressive-code::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.25rem;
+  background: linear-gradient(90deg, #0ea5e9, #1e40af);
+  z-index: 1;
+}
+
+/* Tables with aerospace styling */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 2rem 0 !important;
+  background: linear-gradient(135deg, #1e293b, #334155) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+table th {
+  background: linear-gradient(135deg, #0ea5e9, #1e40af) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+  font-size: 0.875rem !important;
+}
+
+table td, table th {
+  padding: 1rem 1.5rem !important;
+  border-bottom: 1px solid rgba(14, 165, 233, 0.1) !important;
+}
+
+table tr:last-child td {
+  border-bottom: none !important;
+}
+
+table tr:hover {
+  background: rgba(14, 165, 233, 0.05) !important;
+}
+
+/* Content area enhancements */
+.main-frame {
+  background: linear-gradient(180deg, #0f172a, #1e293b) !important;
+}
+
+/* Footer styling */
+.footer {
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+  border-top: 1px solid rgba(14, 165, 233, 0.2) !important;
+}
+
+/* Better approach - use a custom class for mission profiles */
+.mission-profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin: 2rem 0;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.mission-profile-card {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.mission-profile-card:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 8px 25px rgba(14, 165, 233, 0.15);
+  transform: translateY(-2px);
+}
+
+.mission-profile-card h3 {
+  margin-top: 0 !important;
+  margin-bottom: 1rem !important;
+  font-size: 1.25rem !important;
+}
+
+@media (max-width: 900px) {
+  .mission-profiles-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    justify-content: center;
+  }
+  
+  .mission-profile-card {
+    padding: 1rem;
+  }
+}
+
+/* Mission status indicators */
+.status-nominal { 
+  color: var(--aerospace-success); 
+  font-weight: 700; 
+}
+.status-caution { 
+  color: var(--aerospace-warning); 
+  font-weight: 700; 
+}
+.status-warning { 
+  color: var(--aerospace-danger); 
+  font-weight: 700; 
+}
+
+/* Special aerospace badges */
+.mission-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(135deg, #0ea5e9, #1e40af);
+  color: white;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  box-shadow: 0 4px 6px rgba(14, 165, 233, 0.3);
+  margin: 0 0.25rem;
+}
+
+.systems-badge {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 4px 6px rgba(5, 150, 105, 0.3);
+}
+
+.telemetry-badge {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3);
+}
+
+/* Launch sequence animation for content */
+@keyframes launchSequence {
+  0% { 
+    opacity: 0; 
+    transform: translateY(1.25rem); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.card {
+  animation: launchSequence 0.6s ease-out forwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+.card:nth-child(4) { animation-delay: 0.4s; }

@@ -1,0 +1,132 @@
+---
+title: Pico-FreeRTOS
+description: Advanced Rocket Avionics & Aerospace Systems Platform
+template: splash
+hero:
+  tagline: Next-Generation Embedded Systems for Aerospace Applications
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Get Started
+      link: /getting-started/introduction/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/gregoryw3/pico-freertos
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import IconRocketLaunch from '~icons/mdi/rocket-launch';
+import IconQuadcopter from '~icons/mdi/quadcopter';
+import IconAntenna from '~icons/mdi/antenna';
+import IconRadar from '~icons/mdi/radar';
+import IconChip from '~icons/mdi/chip';
+import IconSatellite from '~icons/mdi/satellite-variant';
+import IconTransmission from '~icons/mdi/transmission-tower';
+import IconMemory from '~icons/mdi/memory';
+import IconHarddisk from '~icons/mdi/harddisk';
+import IconCellphone from '~icons/mdi/cellphone-wireless';
+
+## Mission-Critical Aerospace Systems
+
+<CardGrid stagger>
+	<Card title="🚀 Rocket Avionics">
+		<IconRocketLaunch slot="icon" />
+		Complete flight computer systems with multi-G sensor fusion, GPS tracking, and real-time telemetry for launch vehicles and recovery systems.
+	</Card>
+	<Card title="🛸 Drone Flight Control">
+		<IconQuadcopter slot="icon" />
+		Advanced autopilot systems with IMU fusion, barometric altitude control, and autonomous navigation capabilities.
+	</Card>
+	<Card title="📡 Ground Station Network">
+		<IconAntenna slot="icon" />
+		Distributed ground control systems with LoRa mesh networking, USB telemetry interfaces, and mobile app integration.
+	</Card>
+	<Card title="🎯 Antenna Tracking">
+		<IconRadar slot="icon" />
+		Precision azimuth/elevation control systems with GPS-based target tracking and multiple radio protocol support.
+	</Card>
+</CardGrid>
+
+## Platform Capabilities
+
+<CardGrid>
+	<Card title="High-G Sensor Fusion">
+		<IconChip slot="icon" />
+		**ADXL375** ±200g accelerometer, **LSM6DSO32** ±32g IMU, and **BMP390** precision altimetry with Kalman filtering for extreme environments.
+	</Card>
+	<Card title="Multi-GNSS Navigation">
+		<IconSatellite slot="icon" />
+		**u-blox M10Q** with concurrent GPS, GLONASS, Galileo, and BeiDou support. Complete NMEA/UBX protocol implementation.
+	</Card>
+	<Card title="Wireless Telemetry">
+		<IconTransmission slot="icon" />
+		Bluetooth LE, **LoRa**, **RFD900** long-range radios with mesh networking and encrypted data transmission.
+	</Card>
+	<Card title="Real-Time OS">
+		<IconMemory slot="icon" />
+		**FreeRTOS** multi-tasking with deterministic scheduling, thread-safe sensor access, and low-latency data processing.
+	</Card>
+	<Card title="Redundant Storage">
+		<IconHarddisk slot="icon" />
+		Dual logging to **flash memory** and **SD cards** with error correction and automatic failover for mission-critical data.
+	</Card>
+	<Card title="Mobile Integration">
+		<IconCellphone slot="icon" />
+		Native **iOS** and **Android** apps for mobile ground stations with real-time telemetry visualization and configuration.
+	</Card>
+</CardGrid>
+
+## Mission Profiles
+
+<div class="mission-profiles-grid">
+
+<div class="mission-profile-card">
+
+### 🚀 Launch Vehicle Systems
+- **Flight Computer**: Real-time guidance, navigation, and control
+- **Recovery Systems**: Dual-deploy parachute control with GPS tracking
+- **Telemetry**: High-rate sensor data transmission to ground stations
+- **Safety Systems**: Automated flight termination and emergency protocols
+
+</div>
+
+<div class="mission-profile-card">
+
+### 🛰️ Payload Management
+- **Adaptive Payloads**: Reconfigurable yearly mission requirements
+- **Data Collection**: High-resolution sensor logging and transmission
+- **Autonomous Operation**: Self-contained mission execution
+- **Recovery Integration**: Coordinated landing and retrieval systems
+
+</div>
+
+<div class="mission-profile-card">
+
+### 📊 Ground Infrastructure
+- **Mission Control**: Multi-screen telemetry visualization and control
+- **Mobile Stations**: Portable ground support with battery operation
+- **Antenna Systems**: Directional tracking for real-time data links
+- **Network Mesh**: Distributed LoRa networks for extended range
+- **Data Analysis**: Real-time performance monitoring and post-flight analysis
+
+</div>
+
+</div>
+
+## Technical Excellence
+
+Built for the demanding requirements of aerospace applications:
+
+- **Fault Tolerance**: Redundant systems with graceful degradation
+{/* - **Real-Time Performance**: Sub-millisecond response times for critical operations */}
+{/* - **Extreme Environment**: Operating range from -40°C to +85°C with shock survival */}
+- **Modular Architecture**: Reusable components across multiple platform configurations
+{/* - **Open Source**: Community-driven development with professional documentation */}
+
+{/* ## Ready for Launch */}
+
+{/* Whether you're building a high-power rocket, autonomous drone, or ground support equipment, Pico-FreeRTOS provides the foundation for mission success. */}
+
+{/* **Start your next aerospace project today.** */}
