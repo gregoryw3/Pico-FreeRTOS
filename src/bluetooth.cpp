@@ -138,17 +138,20 @@ void bluetooth_task(void *pvParameters) {
 // Standard FreeRTOS hook functions already implemented in the existing main.c
 /*-----------------------------------------------------------*/
 
-// void vApplicationMallocFailedHook(TaskHandle_t xTask, signed portCHAR* pcTaskName)
-// {
-//     /* Called if a call to pvPortMalloc() fails because there is insufficient
-//     free memory available in the FreeRTOS heap.  pvPortMalloc() is called
-//     internally by FreeRTOS API functions that create tasks, queues, software
-//     timers, and semaphores.  The size of the FreeRTOS heap is set by the
-//     configTOTAL_HEAP_SIZE configuration constant in FreeRTOSConfig.h. */
-
-//     /* Force an assert. */
-//     configASSERT( ( volatile void * ) NULL );
-// }
+void vApplicationMallocFailedHook( void )
+{
+    /* Called if a call to pvPortMalloc() fails because there is insufficient
+    free memory available in the FreeRTOS heap. This is a critical error. */
+    
+    printf("CRITICAL ERROR: Malloc failed - out of heap memory!\n");
+    printf("Free heap space: %zu bytes\n", xPortGetFreeHeapSize());
+    
+    // Turn on LED to indicate error (use regular GPIO LED)
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
+    
+    // Force an assert to halt system
+    configASSERT( ( volatile void * ) NULL );
+}
 /*-----------------------------------------------------------*/
 
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )

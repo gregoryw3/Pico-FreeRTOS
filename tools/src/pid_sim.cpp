@@ -1,10 +1,10 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include "Controls.h"
+#include "Controls.hpp"
 
 int main() {
-    using namespace Controls::PID;
+    using namespace PID;
 
     // Simulation parameters
     double setpoint = 10.0;

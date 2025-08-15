@@ -1,8 +1,14 @@
 # Bluetooth Executable
 # set(BTSTACK_EXAMPLE_TYPE freertos CACHE STRING "BTstack example type")
 
+# Generate protobuf files
+nanopb_generate_cpp(PROTO_SRCS PROTO_HDRS
+    ${CMAKE_CURRENT_LIST_DIR}/../include/data.proto
+)
+
 add_executable(bluetooth
         ${PROJECT_SOURCE_DIR}/src/bluetooth.cpp
+        ${PROTO_SRCS}
         )
 
 # pico_set_binary_type(bluetooth copy_to_ram)
@@ -24,12 +30,14 @@ target_link_libraries(bluetooth
         pico_btstack_classic
         pico_btstack_cyw43
         test_bluetooth
+        nanopb
         # pico_lwip_freertos
         # pico_lwip_core
 )
 
 target_include_directories(bluetooth PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}  # For generated protobuf headers
         ${PICO_SDK_PATH}/lib/btstack/src
         ${CMAKE_CURRENT_LIST_DIR}/libs
         ${CMAKE_CURRENT_LIST_DIR}/../include
@@ -59,6 +67,7 @@ pico_add_extra_outputs(bluetooth)
 
 add_executable(sensors
         ${PROJECT_SOURCE_DIR}/src/sensors.cpp
+        ${PROTO_SRCS}
 )
 
 
@@ -82,10 +91,13 @@ target_link_libraries(sensors
         ISM330DHCX
         LSM6DSO32
         UBLOX
+        # Protocol Buffers
+        nanopb
 )
 
 target_include_directories(sensors PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}  # For generated protobuf headers
         ${PICO_SDK_PATH}/lib/btstack/src
         ${CMAKE_CURRENT_LIST_DIR}/libs
 )
@@ -132,6 +144,7 @@ target_link_libraries(simple
         # Sensor libraries
         # ADXL375
         # BMP390
+        BNO55
         # ISM330DHCX
         # LSM6DSO32
         # UBLOX

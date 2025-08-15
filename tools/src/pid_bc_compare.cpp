@@ -105,10 +105,10 @@ inline std::array<float, 3> computePidGmvc(const std::array<float, 3> &num, cons
 #include <thread>
 #include <mutex>
 #include <chrono>
-#include "Controls.h"
+#include "Controls.hpp"
 
 int main() {
-    using namespace Controls::PID;
+    using namespace PID;
     // Setpoint will change over time with randomness
     float setpoint_base = 0.0f;
     float setpoint = setpoint_base;

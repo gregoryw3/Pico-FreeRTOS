@@ -4,6 +4,8 @@
 #include "hardware/i2c.h"
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 namespace ADXL375 {
 
@@ -157,8 +159,8 @@ public:
     // }
 
     bool init(const Settings& settings = Settings()) {
-        if (!check_device_id()) {
-            printf("ADXL375: Device ID check failed\n");
+        // Use the standardized device ID verification from Sensor base class
+        if (!this->verify_device_id(Register::DEVID, 0xE5, "ADXL375")) {
             return false;
         }
     
@@ -238,25 +240,6 @@ public:
         return data;
     }
     
-    // Device ID verification
-    uint8_t read_device_id() {
-        uint8_t device_id = 0;
-        if constexpr (std::is_same_v<BusType, I2C>) {
-            read_registers_i2c(Register::DEVID, &device_id, 1);
-        } else if constexpr (std::is_same_v<BusType, SPI>) {
-            read_registers_spi(Register::DEVID, &device_id, 1);
-        }
-        return device_id;
-    }
-
-    bool check_device_id() {
-        uint8_t device_id = read_device_id();
-        if (device_id != 0xE5) {
-            return false;
-        }
-        return true;
-    }
-    
     // Set bandwidth
     bool set_bandwidth(BandWidth bw) {
         bool success = write_register(Register::BW_RATE, static_cast<uint8_t>(bw));
@@ -300,7 +283,7 @@ public:
         bool success = write_register(Register::DATA_FORMAT, format_value);
         if (success) {
             data_justification = justification;
-            sleep_ms(10); // 10ms delay as in Rust code
+            vTaskDelay(pdMS_TO_TICKS(10)); // 10ms delay (FreeRTOS compatible)
         }
         return success;
     }

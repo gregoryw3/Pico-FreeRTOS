@@ -29,6 +29,17 @@ struct MagData {
     float x, y, z;
 };
 
+struct Quaternion {
+    float w, x, y, z;
+    
+    Quaternion(float w = 0.0f, float x = 0.0f, float y = 0.0f, float z = 0.0f)
+        : w(w), x(x), y(y), z(z) {}
+};
+
+struct RollPitchYaw {
+    float roll, pitch, yaw;
+};
+
 struct PressureData {
     float pressure;
     float temperature;
@@ -57,6 +68,13 @@ auto make_sensor(Args&&... args) {
     return Sensor<BusType>(std::forward<Args>(args)...);
 }
 
+// Device ID verification structure - each sensor defines these
+struct DeviceIdInfo {
+    uint8_t register_address;
+    uint8_t expected_value;
+    const char* device_name;
+};
+
 // Generic base template (not defined)
 template<typename BusType>
 class Sensor {
@@ -69,9 +87,46 @@ template<>
 class Sensor<I2C> : public Sensor<void> {
 public:
     Sensor(i2c_inst_t* i2c, uint8_t addr) : i2c(i2c), addr(addr) {}
+    
 protected:
     i2c_inst_t* i2c;
     uint8_t addr;
+    
+    // I2C implementation of device ID register reading
+    template<typename RegisterType>
+    uint8_t read_device_id_register(RegisterType reg) {
+        uint8_t device_id = 0;
+        uint8_t reg_addr = static_cast<uint8_t>(reg);
+        
+        // Write register address
+        int result = i2c_write_blocking(i2c, addr, &reg_addr, 1, true);
+        if (result != 1) {
+            printf("I2C: Failed to write device ID register address\n");
+            return 0;
+        }
+        
+        // Read device ID
+        result = i2c_read_blocking(i2c, addr, &device_id, 1, false);
+        if (result != 1) {
+            printf("I2C: Failed to read device ID\n");
+            return 0;
+        }
+        
+        return device_id;
+    }
+    
+    // Helper method for derived classes to implement device ID checking
+    template<typename RegisterType>
+    bool verify_device_id(RegisterType id_register, uint8_t expected_value, const char* device_name = "Unknown") {
+        uint8_t device_id = read_device_id_register(id_register);
+        if (device_id != expected_value) {
+            printf("%s: Device ID check failed. Expected: 0x%02X, Got: 0x%02X\n", 
+                   device_name, expected_value, device_id);
+            return false;
+        }
+        printf("%s: Device ID verified (0x%02X)\n", device_name, device_id);
+        return true;
+    }
 };
 
 // Specialization for SPI
@@ -79,9 +134,37 @@ template<>
 class Sensor<SPI> : public Sensor<void> {
 public:
     Sensor(spi_inst_t* spi, uint cs_pin) : spi(spi), cs_pin(cs_pin) {}
+    
 protected:
     spi_inst_t* spi;
     uint cs_pin;
+    
+    // SPI implementation of device ID register reading
+    template<typename RegisterType>
+    uint8_t read_device_id_register(RegisterType reg) {
+        uint8_t device_id = 0;
+        uint8_t reg_addr = static_cast<uint8_t>(reg) | 0x80; // Set read bit for SPI
+        
+        gpio_put(cs_pin, 0); // Assert CS
+        spi_write_blocking(spi, &reg_addr, 1);
+        spi_read_blocking(spi, 0, &device_id, 1);
+        gpio_put(cs_pin, 1); // Deassert CS
+        
+        return device_id;
+    }
+    
+    // Helper method for derived classes to implement device ID checking
+    template<typename RegisterType>
+    bool verify_device_id(RegisterType id_register, uint8_t expected_value, const char* device_name = "Unknown") {
+        uint8_t device_id = read_device_id_register(id_register);
+        if (device_id != expected_value) {
+            printf("%s: Device ID check failed. Expected: 0x%02X, Got: 0x%02X\n", 
+                   device_name, expected_value, device_id);
+            return false;
+        }
+        printf("%s: Device ID verified (0x%02X)\n", device_name, device_id);
+        return true;
+    }
 };
 
 // Compile error for unsupported UART

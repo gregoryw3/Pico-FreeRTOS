@@ -59,6 +59,68 @@ target_include_directories(libfixmatrix INTERFACE
 target_compile_definitions(libfixmatrix INTERFACE FIXMATRIX_MAX_SIZE=3)
 target_link_libraries(libfixmatrix INTERFACE libfixmath)
 
+# Add nanopb (Protocol Buffers for embedded systems)
+add_library(nanopb STATIC)
+target_sources(nanopb PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/include/nanopb/pb_encode.c
+    ${CMAKE_CURRENT_LIST_DIR}/include/nanopb/pb_decode.c
+    ${CMAKE_CURRENT_LIST_DIR}/include/nanopb/pb_common.c
+)
+target_include_directories(nanopb PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/include/nanopb
+)
+
+# Function to generate protobuf headers automatically
+function(nanopb_generate_cpp SRCS HDRS)
+    if(NOT ARGN)
+        message(SEND_ERROR "Error: nanopb_generate_cpp() called without any proto files")
+        return()
+    endif()
+
+    set(${SRCS})
+    set(${HDRS})
+
+    foreach(FIL ${ARGN})
+        get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
+        get_filename_component(FIL_WE ${FIL} NAME_WE)
+        get_filename_component(FIL_DIR ${ABS_FIL} DIRECTORY)
+
+        set(PB_H "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h")
+        set(PB_C "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.c")
+        set(PB_INTERMEDIATE "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb")
+
+        list(APPEND ${SRCS} "${PB_C}")
+        list(APPEND ${HDRS} "${PB_H}")
+
+        # Step 1: Compile .proto to .pb using protoc
+        add_custom_command(
+            OUTPUT "${PB_INTERMEDIATE}"
+            COMMAND protoc
+            ARGS --proto_path=${FIL_DIR}
+                 --descriptor_set_out=${PB_INTERMEDIATE}
+                 ${ABS_FIL}
+            DEPENDS ${ABS_FIL}
+            COMMENT "Compiling ${FIL} to protobuf descriptor"
+            VERBATIM
+        )
+
+        # Step 2: Generate .pb.h and .pb.c from .pb using nanopb generator
+        add_custom_command(
+            OUTPUT "${PB_C}" "${PB_H}"
+            COMMAND python3 ${CMAKE_SOURCE_DIR}/include/nanopb/generator/nanopb_generator.py
+            ARGS --output-dir=${CMAKE_CURRENT_BINARY_DIR}
+                 ${PB_INTERMEDIATE}
+            DEPENDS ${PB_INTERMEDIATE}
+            COMMENT "Running nanopb generator on ${FIL_WE}.pb"
+            VERBATIM
+        )
+    endforeach()
+
+    set_source_files_properties(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
+    set(${SRCS} ${${SRCS}} PARENT_SCOPE)
+    set(${HDRS} ${${HDRS}} PARENT_SCOPE)
+endfunction()
+
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libs)
 

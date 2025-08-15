@@ -6,11 +6,14 @@
 #include "hardware/i2c.h"
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
+#include "hardware/watchdog.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+
+#include "BNO55.hpp"
 
 // Constants
 #define PICO_DEFAULT_LED_PIN 25
@@ -21,21 +24,19 @@
 #define I2C1_SDA_PIN 18
 #define I2C1_SCL_PIN 19
 
-#define UART1_TX_PIN 8
-#define UART1_RX_PIN 9
+#define UART1_TX_PIN 20
+#define UART1_RX_PIN 21
 
-#define I2C_FREQUENCY 100000
-#define UART_BAUD_RATE 38400
+#define I2C_FREQUENCY 400000
+#define UART_BAUD_RATE 9600
 
 static bool setup_hardware(void);
+static void vLaunch(void);
 
 // Task function prototypes
 void simple_task(void *pvParameters);
+void bno055_task(void *pvParameters);
 void uart_usb_bridge_task(void *pvParameters);
-void i2c_scan_task(void *pvParameters);
-
-// I2C helper function
-bool reserved_addr(uint8_t addr);
 
 // void vApplicationMallocFailedHook(TaskHandle_t xTask, signed portCHAR* pcTaskName);
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
@@ -47,7 +48,7 @@ static bool setup_hardware(void) {
     stdio_init_all();
 
     if (cyw43_arch_init()) {
-        printf("Wi-Fi init failed");
+        printf("ERROR: Wi-Fi init failed\n");
         return false;
     }
 
@@ -56,56 +57,70 @@ static bool setup_hardware(void) {
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
 
-    // Initialize UART1 for GPS
-    uart_init(uart1, UART_BAUD_RATE);
+    // Initialize UART1 for GPS with error checking
+    uint baud_actual = uart_init(uart1, UART_BAUD_RATE);
+    if (baud_actual == 0) {
+        printf("ERROR: UART1 initialization failed\n");
+        return false;
+    }
+    printf("UART1 initialized at %u baud (requested %u)\n", baud_actual, UART_BAUD_RATE);
+    
     gpio_set_function(UART1_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART1_RX_PIN, GPIO_FUNC_UART);
     uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
     uart_set_hw_flow(uart1, false, false);
     uart_set_fifo_enabled(uart1, true);
 
-    // Initialize I2C0 for device scanning
-    i2c_init(i2c0, I2C_FREQUENCY);
+    // Initialize I2C0 for device scanning with error checking
+    uint i2c0_actual = i2c_init(i2c0, I2C_FREQUENCY);
+    if (i2c0_actual == 0) {
+        printf("ERROR: I2C0 initialization failed\n");
+        return false;
+    }
+    printf("I2C0 initialized at %u Hz (requested %u)\n", i2c0_actual, I2C_FREQUENCY);
+    
     gpio_set_function(I2C0_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(I2C0_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(I2C0_SDA_PIN);
     gpio_pull_up(I2C0_SCL_PIN);
 
-    // Initialize I2C1 for device scanning
-    i2c_init(i2c1, I2C_FREQUENCY);
+    // Initialize I2C1 for device scanning with error checking
+    uint i2c1_actual = i2c_init(i2c1, I2C_FREQUENCY);
+    if (i2c1_actual == 0) {
+        printf("ERROR: I2C1 initialization failed\n");
+        return false;
+    }
+    printf("I2C1 initialized at %u Hz (requested %u)\n", i2c1_actual, I2C_FREQUENCY);
+    
     gpio_set_function(I2C1_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(I2C1_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(I2C1_SDA_PIN);
     gpio_pull_up(I2C1_SCL_PIN);
 
+    printf("Hardware initialization completed successfully\n");
     return true;
 }
 
-void uart_baudrate_sweep_task(void *pvParameters) {
-    uint32_t baudrates[] = {4800, 9600, 19200, 38400, 57600, 115200};
-    const int num_rates = sizeof(baudrates) / sizeof(baudrates[0]);
-    uint8_t buf[64];
+void vLaunch(void) {
+    printf("%s starting on core %d\n", "FreeRTOS SMP", get_core_num());
+    printf("Initial free heap: %zu bytes\n", xPortGetFreeHeapSize());
+    
+    // Create tasks with increased stack sizes to prevent overflow
+    // In SMP mode, tasks can run on any core automatically
+    xTaskCreate(simple_task, "SimpleTask", configMINIMAL_STACK_SIZE * 2, NULL, 2, NULL);
+    // xTaskCreate(bno055_task, "BNO055Task", configMINIMAL_STACK_SIZE * 6, NULL, 2, NULL);
+    // Create UART-USB bridge task with larger stack and lower priority
+    xTaskCreate(uart_usb_bridge_task, "UARTUSBBridge", configMINIMAL_STACK_SIZE * 3, NULL, 1, NULL);
+    
+    printf("Tasks created on core %d. Free heap: %zu bytes\n", get_core_num(), xPortGetFreeHeapSize());
 
-    vTaskDelay(pdMS_TO_TICKS(5000)); // Allow time for GPS to stabilize
-
-    for (int i = 0; i < num_rates; ++i) {
-        uart_init(uart1, baudrates[i]);
-        printf("\n--- Testing baudrate: %u ---\n", baudrates[i]);
-        absolute_time_t until = make_timeout_time_ms(2000);
-        int count = 0;
-        while (absolute_time_diff_us(get_absolute_time(), until) > 0 && count < sizeof(buf)) {
-            if (uart_is_readable(uart1)) {
-                uart_read_blocking(uart1, buf + count, 1);
-                putchar(buf[count]);
-                count++;
-            }
-        }
-        printf("\n--- End of baudrate %u ---\n", baudrates[i]);
-        sleep_ms(500); // Short pause between rates
+    // Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+    
+    // We should never get here
+    while (1) {
+        tight_loop_contents();
     }
-
-    // Optionally delete the task when done
-    vTaskDelete(NULL);
 }
 
 int main(void) {
@@ -114,44 +129,107 @@ int main(void) {
         return -1;
     }
 
-    // xTaskCreate(uart_baudrate_sweep_task, "BaudSweep", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
+    printf("%s on both cores:\n", "FreeRTOS SMP");
+    vLaunch();  // Start scheduler on core 0
 
-    
-    printf("FreeRTOS SMP starting on Raspberry Pi Pico\n");
-    // Create tasks for sensors
-    // xTaskCreate(simple_task, "SimpleTask", configMINIMAL_STACK_SIZE * 3, NULL, 2, NULL);
-    // Create UART-USB bridge task
-    // xTaskCreate(uart_usb_bridge_task, "UARTUSBBridge", configMINIMAL_STACK_SIZE * 4, NULL, 2, NULL);
-    // Create I2C scan task (runs once every 10 seconds)
-    xTaskCreate(i2c_scan_task, "I2CScan", configMINIMAL_STACK_SIZE * 4, NULL, 1, NULL);
-    
-    // Give hardware time to stabilize before starting scheduler
-    printf("Waiting for hardware to stabilize...\n");
-    sleep_ms(2000);
-    
-    // Start the FreeRTOS scheduler
-    vTaskStartScheduler();
-    
-    // We should never get here
-    while (true) {
-        printf("Error: FreeRTOS scheduler failed to start\n");
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-
-    return -1;
+    return 0;
 }
 
 void simple_task(void *pvParameters) {    
     // This is a simple task that just toggles the LED
+    static uint32_t loop_count = 0;
+    
+    printf("Simple task started on core %d\n", get_core_num());
+    
     while (true) {
+        // printf("Simple task running on core %d\n", get_core_num());
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        vTaskDelay(pdMS_TO_TICKS(250));    // Delay for 500 ms
+        vTaskDelay(pdMS_TO_TICKS(250));    // Delay for 250 ms
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-        vTaskDelay(pdMS_TO_TICKS(250));    // Delay for 500 ms
+        vTaskDelay(pdMS_TO_TICKS(250));    // Delay for 250 ms
+        
+        // Periodic heartbeat message every 60 seconds
+        loop_count++;
+        if (loop_count % 120 == 0) {  // 120 * 500ms = 60 seconds
+            printf("Simple task heartbeat (core %d) - loops: %lu, free heap: %zu bytes\n", 
+                   get_core_num(), loop_count, xPortGetFreeHeapSize());
+        }
     }
 }
 
+void bno055_task(void *pvParameters) {
 
+    // Initialize BNO55 sensor
+    BNO55::BNO55<I2C> bno55_sensor(i2c0, BNO55::Address::DEFAULT);
+    bno55_sensor.pose_on_pcb = Pose(Eigen::Vector3f(0.0f, 0.0f, 0.0f), Eigen::Quaternionf::Identity());
+    if (!bno55_sensor.init(BNO55::Settings {
+        .power_mode = BNO55::PowerMode::NORMAL,
+        .operation_mode = BNO55::OperationMode::NDOF,
+        .unit_selection = BNO55::UnitSelection::METRIC,
+        .axis_map_config = 0x00, // Default axis mapping
+        .axis_map_sign = 0x00,   // Default axis sign
+        .temp_source = 0x00      // Default temperature source
+    })) {
+        while(true) {
+            printf("BNO55 initialization failed, retrying...\n");
+            vTaskDelay(pdMS_TO_TICKS(1000)); // Retry every second
+        }
+    }
+
+    while(true) {
+        // Method 1: Read individual sensor components (as you're doing now)
+        // Read accelerometer data
+        AccelData accel_data = bno55_sensor.read_accel();
+        Eigen::Vector3f accel = Eigen::Vector3f(accel_data.x, accel_data.y, accel_data.z);
+
+        // Teleplot format for accelerometer data (separate lines)
+        printf(">accel_x:%.3f\n", accel_data.x);
+        printf(">accel_y:%.3f\n", accel_data.y);
+        printf(">accel_z:%.3f\n", accel_data.z);
+
+        // Method 2: Read all IMU9 data at once using the new read() method
+        IMU9Data imu9_data = bno55_sensor.read();
+        
+        // Now you can access all 9-axis data from the single read
+        printf(">imu9_accel_x:%.3f\n", imu9_data.accel.x);
+        printf(">imu9_gyro_x:%.3f\n", imu9_data.gyro.x);
+        printf(">imu9_mag_x:%.3f\n", imu9_data.mag.x);
+        
+        // This data could be stored in a shared structure for other tasks to access
+        // (See SensorDataAggregator.hpp for a complete example)
+
+        // Read quaternion data
+        Quaternion quat = bno55_sensor.read_quaternion();
+        // Teleplot format for quaternion data (separate lines)
+        printf(">quat_w:%.3f\n", quat.w);
+        printf(">quat_x:%.3f\n", quat.x);
+        printf(">quat_y:%.3f\n", quat.y);
+        printf(">quat_z:%.3f\n", quat.z);
+
+        // Read roll, pitch, yaw data
+        RollPitchYaw rpy = bno55_sensor.read_euler();
+        // Teleplot format for Euler angles (in degrees)
+        printf(">roll:%.2f\n", rpy.roll);
+        printf(">pitch:%.2f\n", rpy.pitch);
+        printf(">yaw:%.2f\n", rpy.yaw);
+
+        // Read Temperature data
+        float temperature = bno55_sensor.read_temperature();
+        // Teleplot format for temperature
+        printf(">temperature:%.2f\n", temperature);
+        
+        // 3D visualization: Send complete shape definition every time
+        // This ensures all properties are always available, even if Teleplot refreshes
+        // printf("3D|imu_orientation:S:cube:W:3:H:1:D:2:C:blue:P:0:0:0:Q:%.3f:%.3f:%.3f:%.3f\n", 
+        //        quat.x, quat.y, quat.z, quat.w);
+
+        // printf("3D|mySimpleCube:S:cube:P:1:1:1:R:0:0:0:W:2:H:2:D:2:C:#2ecc71\n");
+        
+        // vTaskDelay(pdMS_TO_TICKS(100)); // 10 Hz update rate (well below 60 FPS limit)
+    }
+
+    vTaskDelete(NULL); // Delete the task when done
+}
 
 
 // UART-USB bridge task: forwards data between UART1 (GPS) and USB CDC
@@ -159,197 +237,50 @@ void uart_usb_bridge_task(void *pvParameters) {
     // Wait for system to stabilize before starting
     vTaskDelay(pdMS_TO_TICKS(3000));
     
-    const size_t bufsize = 128;
+    const size_t bufsize = 64;  // Reduced buffer size for safety
     uint8_t uart_buf[bufsize];
-    uint8_t usb_buf[bufsize];
+    
+    printf("UART-USB Bridge Task Started on core %d\n", get_core_num());
 
     while (true) {
-        // printf("UART-USB Bridge Task Running\n");
-        // fflush(stdout); // Ensure output is flushed
-        // Forward UART->USB
-        uart_read_blocking(uart1, uart_buf, 1); // read 1 byte
-        // printf("UART RX: %02x\n", uart_buf[0]);
-        putchar(uart_buf[0]); // USB CDC
-        // if (uart_is_readable(uart1)) {
+        // printf("UART-USB Bridge running on core %d\n", get_core_num());
+        // Forward UART->USB (non-blocking with timeout)
+        if (uart_is_readable_within_us(uart1, 1000)) {  // 1ms timeout
+            size_t bytes_read = 0;
             
-        // }
-        // Forward USB->UART
-        int c = getchar_timeout_us(0);
-        if (c != PICO_ERROR_TIMEOUT) {
+            // Read available bytes (up to buffer size)
+            while (uart_is_readable(uart1) && bytes_read < bufsize - 1) {
+                uart_buf[bytes_read] = uart_getc(uart1);
+                bytes_read++;
+                
+                // Prevent infinite loop - yield after reading some data
+                if (bytes_read >= 32) {
+                    break;
+                }
+            }
+            
+            // Output to USB if we got data
+            if (bytes_read > 0) {
+                for (size_t i = 0; i < bytes_read; i++) {
+                    putchar(uart_buf[i]);
+                }
+                fflush(stdout); // Ensure data is sent
+            }
+        }
+        
+        // Forward USB->UART (non-blocking)
+        int c = getchar_timeout_us(0);  // Non-blocking read
+        if (c != PICO_ERROR_TIMEOUT && c >= 0) {
             uint8_t b = (uint8_t)c;
-            uart_write_blocking(uart1, &b, 1);
+            if (uart_is_writable(uart1)) {  // Check if UART can accept data
+                uart_putc(uart1, b);
+            }
         }
-        // if (stdio_usb_connected()) {
-            
-        // }
-        vTaskDelay(pdMS_TO_TICKS(1)); // Small delay to yield
+        
+        // Yield to other tasks more frequently
+        vTaskDelay(pdMS_TO_TICKS(2)); // 2ms delay instead of 1ms
     }
 }
-
-// I2C reserves some addresses for special purposes. We exclude these from the scan.
-// These are any addresses of the form 000 0xxx or 111 1xxx
-bool reserved_addr(uint8_t addr) {
-    return (addr & 0x78) == 0 || (addr & 0x78) == 0x78;
-}
-
-// I2C Bus Scan task: scans for I2C devices periodically
-void i2c_scan_task(void *pvParameters) {
-    // Wait for system to stabilize before starting I2C scans
-    vTaskDelay(pdMS_TO_TICKS(5000));
-    
-    // Define possible I2C pin combinations
-    struct i2c_pins {
-        uint8_t sda;
-        uint8_t scl;
-        const char* name;
-    };
-    
-    struct i2c_pins i2c0_pins[] = {
-        {0, 1, "GP0/GP1"},
-        {4, 5, "GP4/GP5"},
-        {8, 9, "GP8/GP9"},
-        {12, 13, "GP12/GP13"},
-        {16, 17, "GP16/GP17"},
-        {20, 21, "GP20/GP21"}
-    };
-    
-    struct i2c_pins i2c1_pins[] = {
-        {2, 3, "GP2/GP3"},
-        {6, 7, "GP6/GP7"},
-        {10, 11, "GP10/GP11"},
-        {14, 15, "GP14/GP15"},
-        {18, 19, "GP18/GP19"},
-        {26, 27, "GP26/GP27"}
-    };
-
-    while (true) {
-        printf("\n========================================\n");
-        printf("Starting comprehensive I2C bus scan...\n");
-        printf("========================================\n");
-
-        // Scan all I2C0 pin combinations
-        for (size_t i = 0; i < sizeof(i2c0_pins) / sizeof(i2c0_pins[0]); i++) {
-            printf("\n=== I2C0 Bus Scan (%s) ===\n", i2c0_pins[i].name);
-            
-            // Deinitialize current I2C0 configuration
-            i2c_deinit(i2c0);
-            
-            // Reconfigure I2C0 with new pins
-            i2c_init(i2c0, I2C_FREQUENCY);
-            gpio_set_function(i2c0_pins[i].sda, GPIO_FUNC_I2C);
-            gpio_set_function(i2c0_pins[i].scl, GPIO_FUNC_I2C);
-            gpio_pull_up(i2c0_pins[i].sda);
-            gpio_pull_up(i2c0_pins[i].scl);
-            
-            // Small delay to let I2C settle
-            vTaskDelay(pdMS_TO_TICKS(100));
-            
-            printf("   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
-            
-            bool found_device = false;
-            for (int addr = 0; addr < (1 << 7); ++addr) {
-                if (addr % 16 == 0) {
-                    printf("%02x ", addr);
-                }
-
-                int ret;
-                uint8_t rxdata;
-                if (reserved_addr(addr))
-                    ret = PICO_ERROR_GENERIC;
-                else
-                    ret = i2c_read_blocking(i2c0, addr, &rxdata, 1, false);
-
-                if (ret >= 0) {
-                    printf("@");
-                    found_device = true;
-                } else {
-                    printf(".");
-                }
-                printf(addr % 16 == 15 ? "\n" : "  ");
-            }
-            
-            if (found_device) {
-                printf("*** DEVICES FOUND on I2C0 %s ***\n", i2c0_pins[i].name);
-            } else {
-                printf("No devices found on I2C0 %s\n", i2c0_pins[i].name);
-            }
-        }
-
-        // Scan all I2C1 pin combinations
-        for (size_t i = 0; i < sizeof(i2c1_pins) / sizeof(i2c1_pins[0]); i++) {
-            printf("\n=== I2C1 Bus Scan (%s) ===\n", i2c1_pins[i].name);
-            
-            // Deinitialize current I2C1 configuration
-            i2c_deinit(i2c1);
-            
-            // Reconfigure I2C1 with new pins
-            i2c_init(i2c1, I2C_FREQUENCY);
-            gpio_set_function(i2c1_pins[i].sda, GPIO_FUNC_I2C);
-            gpio_set_function(i2c1_pins[i].scl, GPIO_FUNC_I2C);
-            gpio_pull_up(i2c1_pins[i].sda);
-            gpio_pull_up(i2c1_pins[i].scl);
-            
-            // Small delay to let I2C settle
-            vTaskDelay(pdMS_TO_TICKS(100));
-            
-            printf("   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
-            
-            bool found_device = false;
-            for (int addr = 0; addr < (1 << 7); ++addr) {
-                if (addr % 16 == 0) {
-                    printf("%02x ", addr);
-                }
-
-                int ret;
-                uint8_t rxdata;
-                if (reserved_addr(addr))
-                    ret = PICO_ERROR_GENERIC;
-                else
-                    ret = i2c_read_blocking(i2c1, addr, &rxdata, 1, false);
-
-                if (ret >= 0) {
-                    printf("@");
-                    found_device = true;
-                } else {
-                    printf(".");
-                }
-                printf(addr % 16 == 15 ? "\n" : "  ");
-            }
-            
-            if (found_device) {
-                printf("*** DEVICES FOUND on I2C1 %s ***\n", i2c1_pins[i].name);
-            } else {
-                printf("No devices found on I2C1 %s\n", i2c1_pins[i].name);
-            }
-        }
-
-        printf("\n========================================\n");
-        printf("Comprehensive I2C scan complete!\n");
-        printf("========================================\n");
-        
-        // Restore original pin configuration
-        i2c_deinit(i2c0);
-        i2c_deinit(i2c1);
-        
-        // Restore I2C0 to original pins
-        i2c_init(i2c0, I2C_FREQUENCY);
-        gpio_set_function(I2C0_SDA_PIN, GPIO_FUNC_I2C);
-        gpio_set_function(I2C0_SCL_PIN, GPIO_FUNC_I2C);
-        gpio_pull_up(I2C0_SDA_PIN);
-        gpio_pull_up(I2C0_SCL_PIN);
-        
-        // Restore I2C1 to original pins
-        i2c_init(i2c1, I2C_FREQUENCY);
-        gpio_set_function(I2C1_SDA_PIN, GPIO_FUNC_I2C);
-        gpio_set_function(I2C1_SCL_PIN, GPIO_FUNC_I2C);
-        gpio_pull_up(I2C1_SDA_PIN);
-        gpio_pull_up(I2C1_SCL_PIN);
-        
-        // Wait 30 seconds before next comprehensive scan
-        vTaskDelay(pdMS_TO_TICKS(30000));
-    }
-}
-
 
 // Standard FreeRTOS hook functions already implemented in the existing main.c
 /*-----------------------------------------------------------*/
@@ -367,6 +298,22 @@ void i2c_scan_task(void *pvParameters) {
 // }
 /*-----------------------------------------------------------*/
 
+// Standard FreeRTOS hook functions
+void vApplicationMallocFailedHook( void )
+{
+    /* Called if a call to pvPortMalloc() fails because there is insufficient
+    free memory available in the FreeRTOS heap. This is a critical error. */
+    
+    printf("CRITICAL ERROR: Malloc failed - out of heap memory!\n");
+    printf("Free heap space: %zu bytes\n", xPortGetFreeHeapSize());
+    
+    // Turn on LED to indicate error (use regular GPIO LED)
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
+    
+    // Force an assert to halt system
+    configASSERT( ( volatile void * ) NULL );
+}
+
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 {
     ( void ) pcTaskName;
@@ -375,6 +322,12 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
     /* Run time stack overflow checking is performed if
     configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
     function is called if a stack overflow is detected. */
+    
+    printf("CRITICAL ERROR: Stack overflow detected in task: %s\n", pcTaskName);
+    printf("Free heap space: %zu bytes\n", xPortGetFreeHeapSize());
+    
+    // Turn on LED to indicate error (use regular GPIO LED)
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
 
     /* Force an assert. */
     configASSERT( ( volatile void * ) NULL );
@@ -401,33 +354,33 @@ void vApplicationIdleHook( void )
 
 void vApplicationTickHook( void )
 {
-#if mainCREATE_SIMPLE_BLINKY_DEMO_ONLY == 0
-    {
-        /* The full demo includes a software timer demo/test that requires
-        prodding periodically from the tick interrupt. */
-        #if (mainENABLE_TIMER_DEMO == 1)
-        vTimerPeriodicISRTests();
-        #endif
+// #if mainCREATE_SIMPLE_BLINKY_DEMO_ONLY == 0
+//     {
+//         /* The full demo includes a software timer demo/test that requires
+//         prodding periodically from the tick interrupt. */
+//         #if (mainENABLE_TIMER_DEMO == 1)
+//         vTimerPeriodicISRTests();
+//         #endif
 
-        /* Call the periodic queue overwrite from ISR demo. */
-        #if (mainENABLE_QUEUE_OVERWRITE == 1)
-        vQueueOverwritePeriodicISRDemo();
-        #endif
+//         /* Call the periodic queue overwrite from ISR demo. */
+//         #if (mainENABLE_QUEUE_OVERWRITE == 1)
+//         vQueueOverwritePeriodicISRDemo();
+//         #endif
 
-        /* Call the periodic event group from ISR demo. */
-        #if (mainENABLE_EVENT_GROUP == 1)
-        vPeriodicEventGroupsProcessing();
-        #endif
+//         /* Call the periodic event group from ISR demo. */
+//         #if (mainENABLE_EVENT_GROUP == 1)
+//         vPeriodicEventGroupsProcessing();
+//         #endif
 
-        /* Call the code that uses a mutex from an ISR. */
-        #if (mainENABLE_INTERRUPT_SEMAPHORE == 1)
-        vInterruptSemaphorePeriodicTest();
-        #endif
+//         /* Call the code that uses a mutex from an ISR. */
+//         #if (mainENABLE_INTERRUPT_SEMAPHORE == 1)
+//         vInterruptSemaphorePeriodicTest();
+//         #endif
 
-        /* Call the code that 'gives' a task notification from an ISR. */
-        #if (mainENABLE_TASK_NOTIFY == 1)
-        xNotifyTaskFromISR();
-        #endif
-    }
-#endif
+//         /* Call the code that 'gives' a task notification from an ISR. */
+//         #if (mainENABLE_TASK_NOTIFY == 1)
+//         xNotifyTaskFromISR();
+//         #endif
+//     }
+// #endif
 }

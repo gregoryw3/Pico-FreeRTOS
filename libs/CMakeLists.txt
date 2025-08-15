@@ -1,5 +1,6 @@
 add_subdirectory(ADXL375)
 add_subdirectory(BMP390)
+add_subdirectory(BNO55)
 add_subdirectory(ISM330DHCX)
 add_subdirectory(LSM6DSO32)
 add_subdirectory(UBLOX)

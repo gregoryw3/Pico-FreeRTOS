@@ -12,6 +12,7 @@ target_include_directories(UBLOX PUBLIC
 target_link_libraries(UBLOX
     PUBLIC pico_stdlib
     PRIVATE hardware_i2c
+    PRIVATE hardware_spi
     PRIVATE hardware_uart
     PRIVATE FreeRTOS-Kernel
 )

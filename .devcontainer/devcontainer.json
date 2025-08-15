@@ -63,6 +63,20 @@
             }
         }
     },
+    "runArgs": [
+        "--privileged",
+        "--device-cgroup-rule=c *:* rmw"
+    ],
+    "mounts": [
+        {
+            "source": "/dev",
+            "target": "/dev",
+            "type": "bind"
+        }
+    ],
+    "containerEnv": {
+        "UDEV": "1"
+    },
     "remoteUser": "vscode",
     "forwardPorts": [
         3000
