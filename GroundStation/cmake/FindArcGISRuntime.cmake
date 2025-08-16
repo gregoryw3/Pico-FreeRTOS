@@ -48,7 +48,13 @@ endfunction()
 
 message("<FindArcGISRuntime.cmake>")
 
-get_install_dir(ArcGISRuntime_INSTALL_DIR "Install directory of ArcGISRuntime")
+# Check if ArcGISRuntime_ROOT is set first
+if(ArcGISRuntime_ROOT)
+  message("Using ArcGISRuntime_ROOT: ${ArcGISRuntime_ROOT}")
+  set(ArcGISRuntime_INSTALL_DIR "${ArcGISRuntime_ROOT}" CACHE STRING "Install directory of ArcGISRuntime")
+else()
+  get_install_dir(ArcGISRuntime_INSTALL_DIR "Install directory of ArcGISRuntime")
+endif()
 
 set(RUNTIME_CMAKE_PATH
   "${ArcGISRuntime_INSTALL_DIR}/sdk/ideintegration/ArcGISRuntime.cmake")

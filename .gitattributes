@@ -1,0 +1,19 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Flag binaries
+*.dll   binary
+*.ico   binary
+*.jpeg  binary
+*.jpg   binary
+*.pdf   binary
+*.png   binary
+*.swc   binary
+*.swf   binary
+*.swz   binary
+*.tbx   binary
+*.thmx  binary
+*.zip   binary
+
+# Custom for Qt Creator
+*.pro    merge=union

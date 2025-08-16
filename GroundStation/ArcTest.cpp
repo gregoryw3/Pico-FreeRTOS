@@ -82,8 +82,8 @@ ArcTest::ArcTest(QWidget *parent /*=nullptr*/)
     m_sceneView = new SceneGraphicsView(scene, this);
 
     // Set initial camera position for MATLAB-style 3D plot view
-    // Position camera at an angle that shows the 3D trajectory clearly
-    Camera initialCamera(m_launchLat - 0.05, m_launchLon - 0.1, 75000, 15, 45, 0);
+    // Position camera at an angle that shows the 3D trajectory clearly (adjusted for lower altitude trajectory)
+    Camera initialCamera(m_launchLat - 0.02, m_launchLon - 0.05, 15000, 30, 60, 0); // Closer and steeper angle for lower altitude trajectory
     m_sceneView->setViewpointCameraAndWait(initialCamera);
 
     // Create graphics overlay for the rocket with ABSOLUTE 3D positioning
@@ -105,15 +105,15 @@ ArcTest::ArcTest(QWidget *parent /*=nullptr*/)
     // Create initial rocket position with EXPLICIT altitude mode
     // Use WGS84 with explicit Z coordinate interpretation
     SpatialReference sr = SpatialReference::wgs84();
-    Point initialPosition(m_launchLon, m_launchLat, 10000, sr);
+    Point initialPosition(m_launchLon, m_launchLat, GROUND_LEVEL, sr);
     
     m_rocketGraphic = new Graphic(initialPosition, rocketSymbol, this);
     m_graphicsOverlay->graphics()->append(m_rocketGraphic);
 
     // Set up orbit camera controller to follow the rocket
-    OrbitGeoElementCameraController* orbitController = new OrbitGeoElementCameraController(m_rocketGraphic, 5000.0, this); // 5km default distance
-    orbitController->setMinCameraDistance(100.0);
-    orbitController->setMaxCameraDistance(50000.0);
+    OrbitGeoElementCameraController* orbitController = new OrbitGeoElementCameraController(m_rocketGraphic, 2000.0, this); // 2km default distance (reduced for lower altitude trajectory)
+    orbitController->setMinCameraDistance(50.0);
+    orbitController->setMaxCameraDistance(10000.0); // Reduced max distance for better viewing of lower altitude trajectory
     orbitController->setTargetVerticalScreenFactor(0.33f);
     m_sceneView->setCameraController(orbitController);
 
@@ -175,11 +175,16 @@ void ArcTest::updateRocketPosition()
     // Calculate new position
     double newLat = m_launchLat + latChange;
     double newLon = m_launchLon + lonChange;
-    double newAlt = 10000 + (m_initialVelocityZ * t) + (0.5 * m_gravity * t * t); // Start from 10km
+    double newAlt = GROUND_LEVEL + (m_initialVelocityZ * t) + (0.5 * m_gravity * t * t); // Start from ground level
     
-    // Ensure altitude doesn't go below 10km (our starting altitude)
-    if (newAlt < 10000) {
-        newAlt = 10000;
+    // Apply maximum altitude constraint (10,000 ft = 3048m)
+    if (newAlt > MAX_ALTITUDE) {
+        newAlt = MAX_ALTITUDE;
+    }
+    
+    // Ensure altitude doesn't go below ground level
+    if (newAlt < GROUND_LEVEL) {
+        newAlt = GROUND_LEVEL;
         // Reset the trajectory for continuous loop
         m_currentTime = 0;
         m_trajectoryPoints.clear();
@@ -188,12 +193,12 @@ void ArcTest::updateRocketPosition()
         delete m_trajectoryBuilder;
         m_trajectoryBuilder = new PolylineBuilder(SpatialReference::wgs84(), this);
         
-        Point resetPosition(m_launchLon, m_launchLat, 10000, SpatialReference::wgs84());
+        Point resetPosition(m_launchLon, m_launchLat, GROUND_LEVEL, SpatialReference::wgs84());
         m_trajectoryBuilder->addPoint(resetPosition);
         m_trajectoryGraphic->setGeometry(m_trajectoryBuilder->toGeometry());
         m_trajectoryPoints.append(resetPosition);
         // Update GPS label to reset position
-        updateGpsLabel(m_launchLat, m_launchLon, 10000);
+        updateGpsLabel(m_launchLat, m_launchLon, GROUND_LEVEL);
         
         // Reset mission tracking for simulation
         m_maxAltitude = 0.0;
@@ -273,12 +278,12 @@ void ArcTest::updateRocketPosition()
         delete m_trajectoryBuilder;
         m_trajectoryBuilder = new PolylineBuilder(SpatialReference::wgs84(), this);
         
-        Point resetPosition(m_launchLon, m_launchLat, 10000, SpatialReference::wgs84());
+        Point resetPosition(m_launchLon, m_launchLat, GROUND_LEVEL, SpatialReference::wgs84());
         m_trajectoryBuilder->addPoint(resetPosition);
         m_trajectoryGraphic->setGeometry(m_trajectoryBuilder->toGeometry());
         m_trajectoryPoints.append(resetPosition);
         // Update GPS label to reset position
-        updateGpsLabel(m_launchLat, m_launchLon, 10000);
+        updateGpsLabel(m_launchLat, m_launchLon, GROUND_LEVEL);
         
         // Reset mission tracking for simulation
         m_maxAltitude = 0.0;

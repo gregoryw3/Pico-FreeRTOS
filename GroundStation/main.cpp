@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     //  }
 
     // Set up ArcGIS Runtime environment
-    ArcGISRuntimeEnvironment::setInstallDirectory("C:/Program Files/ArcGIS SDKs/Qt200.7.0");
+    // ArcGISRuntimeEnvironment::setInstallDirectory("C:/Program Files/ArcGIS SDKs/Qt200.8.0");
 
     ArcTest applicationWindow;
     applicationWindow.setMinimumWidth(800);

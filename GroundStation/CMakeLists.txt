@@ -37,6 +37,18 @@ find_package(Qt6 COMPONENTS REQUIRED Core Widgets Multimedia Positioning Sensors
 if (Qt6Core_VERSION VERSION_LESS 6.8.2)
   message(FATAL_ERROR "This version of the ArcGIS Maps SDK for Qt requires at least Qt 6.8.2")
 endif()
+
+# Set ArcGIS Runtime SDK path based on platform
+if(WIN32)
+  set(ArcGISRuntime_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/include/windows/qt200.8.0")
+elseif(APPLE)
+    set(ArcGISRuntime_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/include/macos/qt200.8.0")
+elseif(UNIX)
+  set(ArcGISRuntime_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/include/linux/qt200.8.0")
+endif()
+
+message(STATUS "Using ArcGIS Runtime SDK at: ${ArcGISRuntime_ROOT}")
+
 find_package(ArcGISRuntime 200.7.0 COMPONENTS REQUIRED Cpp)
 
 set(SOURCE_FILES
