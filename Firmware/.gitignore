@@ -1,5 +1,3 @@
 build/*
 .DS_Store
 .vscode/*
-tools/build/*
-tools/imgui.ini

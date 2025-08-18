@@ -1,0 +1,127 @@
+% Define parameters
+Fs = 100; % Sample rate
+N = 1000; % Number of samples
+Fc = 0.25; % Frequency of the sinusoidal input
+t = (0:(1/Fs):((N-1)/Fs)).'; % Time vector
+
+% Create multiple IMU sensors
+numIMUs = 3; % Number of IMUs
+params = gyroparams;
+imus = cell(numIMUs, 1);
+for i = 1:numIMUs
+    imus{i} = imuSensor('SampleRate', Fs, 'Gyroscope', params);
+end
+
+% Generate angular velocity data
+angvel = zeros(N, 3);
+angvel(:, 1) = sin(2 * pi * Fc * t); % Simulated angular velocity
+
+% Add noise to the angular velocity data
+noise_std_dev = 0.1; % Standard deviation of the noise
+noise = noise_std_dev * randn(N, 3); % Generate Gaussian noise
+noisy_angvel = angvel + noise; % Add noise to the angular velocity
+
+% Get gyroscope data from all IMUs
+gyroData = zeros(N, numIMUs * 3); % Store data for all IMUs (3 measurements per IMU)
+for i = 1:numIMUs
+    [~, gyroData(:, (i-1)*3 + 1:(i-1)*3 + 3)] = imus{i}(zeros(N, 3), noisy_angvel);
+end
+
+% Initialize your EKF parameters
+initial_state = [0; 0; 0; 0]; % Initial state
+initial_covariance = eye(4); % Initial covariance
+process_noise = 0.4 * eye(4); % Process noise covariance
+measurement_noise = 0.0000002 * eye(2); % Measurement noise covariance
+
+% Prepare measurements for your EKF
+measurements = cell(N, 1);
+for i = 1:N
+    measurements{i} = mean(gyroData(i, 1:2:end), 2)'; % Average measurements
+end
+
+% Initialize storage for your EKF state estimates
+state_estimates = zeros(4, N);
+covariance_estimates = initial_covariance;
+
+% Run your EKF
+for i = 1:N
+    z = measurements{i}; % Measurement from the i-th IMU
+    [state_estimates(:, i), covariance_estimates] = EKF_step(z, initial_state, covariance_estimates, process_noise, measurement_noise);
+    initial_state = state_estimates(:, i); % Update initial state for next iteration
+end
+
+% Initialize MATLAB's insEKF
+sensor1 = insGyroscope; % Define gyroscope sensor
+sensor2 = insAccelerometer; % Define accelerometer sensor
+filter = insEKF(sensor1, sensor2); % Create insEKF object
+
+% Define the time step based on the sample rate
+dt = 1 / Fs; % Time step in seconds
+
+% Obtain the indices for the angular velocity state
+idx = stateinfo(filter, "AngularVelocity");
+
+% Run MATLAB's insEKF
+matlab_state_estimates = zeros(4, N); % Ensure this matches the expected state size
+for i = 1:N
+    % Update the filter with noisy angular velocity data
+    filter.predict(dt); % Predict step with dt
+    [state_estimate, ~] = filter.correct(idx, noisy_angvel(i, :)', diag([0.0001, 0.1, 0.1])); % Correct step
+    matlab_state_estimates(:, i) = state_estimate(1:4); % Assign only the first four elements
+end
+
+% Plot the results in 3D
+figure;
+hold on;
+
+% Plot your EKF output
+plot3(t, state_estimates(1, :), zeros(N, 1), 'DisplayName', 'Your EKF Output', 'LineWidth', 2);
+
+% Plot MATLAB's insEKF output
+plot3(t, matlab_state_estimates(1, :), zeros(N, 1), 'DisplayName', 'MATLAB insEKF Output', 'LineWidth', 2);
+
+% Plat Sine Wave
+plot3(t, angvel, zeros(N, 1), 'DisplayName', 'Reference Sine Wave', 'LineWidth', 2);
+
+% Plat Noisy Wave
+plot3(t, noisy_angvel, zeros(N, 1), 'DisplayName', 'Noisy Angular Velocity', 'LineWidth', 2);
+
+% Finalize the plot and display the results
+%view(3); % Set the view to 3D
+
+% Set labels and title
+xlabel('Time (s)');
+ylabel('State Estimate (rad/s)');
+zlabel('Z-axis (not used)');
+title('Comparison of EKF Outputs');
+legend;
+grid on;
+hold off;
+
+% EKF step function remains unchanged
+function [state_est, covariance_est] = EKF_step(z, state, covariance, process_noise, measurement_noise)
+    % Prediction Step
+    [state_pred, covariance_pred] = predict(state, covariance, process_noise);
+
+    % Update Step
+    [state_est, covariance_est] = update(state_pred, covariance_pred, z, measurement_noise);
+end
+
+function [state_pred, covariance_pred] = predict(state, covariance, process_noise)
+    dt = 1; % Time step
+    F = [1 0 dt 0; 0 1 0 dt; 0 0 1 0; 0 0 0 1]; % State transition matrix
+    state_pred = F * state; % Predicted state
+    covariance_pred = F * covariance * F' + process_noise; % Predicted covariance
+end
+
+function [state_est, covariance_est] = update(state_pred, covariance_pred, z, measurement_noise)
+    H = [1 0 0 0; 0 1 0 0]; % Measurement matrix
+    z_pred = H * state_pred; % Predicted measurement
+    y = z - z_pred; % Measurement residual
+    S = H * covariance_pred * H' + measurement_noise; % Residual covariance
+    K = covariance_pred * H' / S; % Kalman gain
+
+    % Update state and covariance
+    state_est = state_pred + K * y;
+    covariance_est = (eye(size(K, 1)) - K * H) * covariance_pred;
+end

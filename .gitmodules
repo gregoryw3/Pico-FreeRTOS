@@ -1,27 +1,30 @@
+[submodule "Tools/include/imgui"]
+	path = Tools/include/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "Tools/include/implot"]
+	path = Tools/include/implot
+	url = https://github.com/epezent/implot.git
+[submodule "Tools/include/glfw"]
+	path = Tools/include/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "Libs/Fusion"]
+	path = Libs/Fusion
+	url = https://github.com/xioTechnologies/Fusion
+[submodule "Libs/eigen"]
+	path = Libs/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "Libs/libfixmath"]
+	path = Libs/libfixmath
+	url = https://github.com/PetteriAimonen/libfixmath.git
+[submodule "Libs/libfixmatrix"]
+	path = Libs/libfixmatrix
+	url = https://github.com/PetteriAimonen/libfixmatrix.git
 [submodule "Firmware/include/FreeRTOS-Kernel"]
 	path = Firmware/include/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
 [submodule "Firmware/include/pico-sdk"]
 	path = Firmware/include/pico-sdk
 	url = https://github.com/raspberrypi/pico-sdk
-[submodule "Firmware/include/eigen"]
-	path = Firmware/include/eigen
-	url = https://gitlab.com/libeigen/eigen.git
-[submodule "Firmware/include/libfixmath"]
-	path = Firmware/include/libfixmath
-	url = https://github.com/PetteriAimonen/libfixmath.git
-[submodule "Firmware/include/libfixmatrix"]
-	path = Firmware/include/libfixmatrix
-	url = https://github.com/PetteriAimonen/libfixmatrix.git
 [submodule "Firmware/include/nanopb"]
 	path = Firmware/include/nanopb
 	url = https://github.com/nanopb/nanopb.git
-[submodule "Firmware/tools/include/imgui"]
-	path = Firmware/tools/include/imgui
-	url = https://github.com/ocornut/imgui.git
-[submodule "Firmware/tools/include/implot"]
-	path = Firmware/tools/include/implot
-	url = https://github.com/epezent/implot.git
-[submodule "Firmware/tools/include/glfw"]
-	path = Firmware/tools/include/glfw
-	url = https://github.com/glfw/glfw.git
